@@ -1,0 +1,50 @@
+# Python
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# KRITIS: Profil browser berisi cookies/session login YouTube.
+# JANGAN pernah masuk ke image Docker (kebocoran kredensial channel).
+profile/
+
+# Data runtime (dipasang sebagai volume di docker-compose)
+thumbnails/
+logs/
+*.db
+*.sqlite
+state.json
+
+# Dev tooling (tidak dibutuhkan di production)
+capture/
+capture.sh
+test_logger.py
+
+# Git & IDE
+.git/
+.gitignore
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Sensitif
+config.local.json
+.env
+.env.local
+secrets.json
+
+# File sampah / artifact
+=1.40.0

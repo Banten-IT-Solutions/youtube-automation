@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  youtube-automation:
+    build: .
+    container_name: youtube-automation
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./profile:/app/profile              # Persistent login session
+      - ./thumbnails:/app/thumbnails        # Thumbnail files
+      - ./logs:/app/logs                    # Logs & screenshots
+      - ./config.json:/app/config.json:ro   # Config (read-only)
+    networks:
+      - automation
+
+networks:
+  automation:
+    driver: bridge

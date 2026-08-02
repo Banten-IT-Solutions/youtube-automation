@@ -1,15 +1,45 @@
 # Python
 __pycache__/
 *.py[cod]
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
 
 # Virtualenv
 .venv/
+venv/
+ENV/
+env/
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
 
 # Profil browser (berisi cookies/login session - JANGAN commit)
 profile/
 
-# Data & log runtime
+# Data & runtime
 thumbnails/
 logs/
+*.db
+*.sqlite
 state.json
+
+# Sensitive
+config.local.json
+.env
+.env.local
+secrets.json
 

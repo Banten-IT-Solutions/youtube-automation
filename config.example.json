@@ -5,18 +5,35 @@
   "logs_dir": "logs",
 
   "playlists": [
-    "Risalatul Maymuniyah"
+    "Risalatul Maymuniyah",
+    "Tafsir Jalalain"
   ],
+  
   "playlist_keywords": {
     "Risalatul Maymuniyah": [
       "risalatul maymuniyah",
       "maymuniyah"
     ],
-    "Minhajut Tholibin": ["minhajut tholibin", "minhajuttholibin"],
-    "Ibanatul Ahkam": ["ibanatul ahkam", "ibanatulahkam"],
-    "Tadzkirotul Qurtubi": ["tadzkirotul qurtubi", "tadzkirotulqurtubi"],
-    "Sirrul Asror": ["sirrul asror", "sirrulasror"],
-    "Tafsir Jalalain": ["tafsir jalalain", "tafsirjalalain"]
+    "Minhajut Tholibin": [
+      "minhajut tholibin",
+      "minhajuttholibin"
+    ],
+    "Ibanatul Ahkam": [
+      "ibanatul ahkam",
+      "ibanatulahkam"
+    ],
+    "Tadzkirotul Qurtubi": [
+      "tadzkirotul qurtubi",
+      "tadzkirotulqurtubi"
+    ],
+    "Sirrul Asror": [
+      "sirrul asror",
+      "sirrulasror"
+    ],
+    "Tafsir Jalalain": [
+      "tafsir jalalain",
+      "tafsirjalalain"
+    ]
   },
 
   "schedule_time": "20:00",
