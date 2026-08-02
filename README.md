@@ -15,6 +15,10 @@ Tool otomasi Python untuk memproses draft video YouTube Studio secara berurutan 
 
 ## ⚡ Quick Start
 
+Pilih salah satu metode di bawah ini. Instruksi lengkap di [`docs/setup.md`](docs/setup.md).
+
+### Metode 1 — Lokal (venv)
+
 ```bash
 # 1. Setup (buat venv + install Playwright + Chromium)
 bash setup.sh
@@ -27,7 +31,32 @@ bash run.sh test
 bash run.sh run 10
 ```
 
-> Alternatif: `make setup` / `make login` / `make test` / `make run LIMIT=10`, atau Docker (`docker-compose build`).
+> Alternatif dengan Makefile: `make setup` / `make login` / `make test` / `make run LIMIT=10`.
+
+### Metode 2 — Docker
+
+```bash
+# 1. Build image
+docker-compose build
+
+# 2. Login (sekali saja, session tersimpan di profile/)
+docker-compose run --rm youtube-automation python yt_auto.py login
+
+# 3. Jalankan
+docker-compose run --rm youtube-automation python yt_auto.py run --limit 5
+docker-compose run --rm youtube-automation python yt_auto.py run
+```
+
+> Volume Docker otomatis memakai folder lokal (`profile/`, `thumbnails/`, `logs/`, `config.json`) — jadi login sekali di Docker tetap berlaku di run berikutnya.
+
+**Lokal vs Docker:**
+
+| Aspek | Lokal (venv) | Docker |
+|-------|--------------|--------|
+| Setup | `bash setup.sh` | `docker-compose build` |
+| Login | `bash run.sh login` | `docker-compose run --rm ... login` |
+| Run | `bash run.sh run 10` | `docker-compose run --rm ... run --limit 10` |
+| Cocok untuk | Development / testing cepat | Production / multi-platform |
 
 ## 📚 Dokumentasi
 
@@ -66,7 +95,9 @@ youtube-automation/
 ├── profile/            # Sesi login (JANGAN di-commit!)
 ├── thumbnails/         # File gambar sampul
 ├── logs/               # Log & screenshots otomatis
-└── setup.sh / run.sh / Makefile / Dockerfile   # Alat bantu
+├── setup.sh / run.sh / Makefile   # Alat bantu lokal
+├── Dockerfile / docker-compose.yml # Alat bantu Docker
+└── .dockerignore
 ```
 
 ## 🚨 Ada Masalah?
