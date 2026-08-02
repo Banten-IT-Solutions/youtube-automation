@@ -111,23 +111,6 @@ def read_file_info(s):
     return None, None
 
 
-def back_to_list(s):
-    """Kembali ke daftar draft dari editor (tombol 'Kembali')."""
-    logger = get_logger()
-    for name in ("Kembali", "Batal"):
-        loc = s.page.get_by_role("button", name=name, exact=True).first
-        try:
-            loc.wait_for(state="visible", timeout=4000)
-            loc.click()
-            s.wait(1500 / 1000.0)
-            logger.result(f"Kembali ke daftar draft → {name}")
-            return True
-        except PWTimeout:
-            continue
-    logger.warning("Tombol kembali tidak ditemukan - cek halaman secara manual")
-    return False
-
-
 MONTH_ID = {
     "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "Mei": 5, "Jun": 6,
     "Jul": 7, "Agu": 8, "Sep": 9, "Okt": 10, "Nov": 11, "Des": 12,
@@ -305,13 +288,6 @@ class Studio:
         loc.click()
         LOG("  klik:", name)
         self.wait()
-
-    def role_click_if_visible(self, name, exact=True, nth=0, timeout=4000):
-        try:
-            self.role_click(name, exact=exact, nth=nth, timeout=timeout)
-            return True
-        except (PWTimeout, Exception):  # FIXME: Exception sudah mencakup PWTimeout
-            return False
 
     def role_fill(self, name, text, exact=True):
         loc = self.page.get_by_role("textbox", name=name, exact=exact).first
@@ -755,52 +731,6 @@ def schedule(s, date_obj, time_str):
 
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
           "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
-MONTH_RE = re.compile(r"^(Jan|Feb|Mar|Apr|Mei|Jun|Jul|Agu|Sep|Okt|Nov|Des)\s+\d{4}$")
-
-
-def _current_month_label(s):
-    btns = s.page.get_by_role("button", name=MONTH_RE)
-    for i in range(btns.count()):
-        try:
-            txt = btns.nth(i).inner_text(timeout=1500).strip()
-            if MONTH_RE.match(txt):
-                return txt
-        except Exception:
-            continue
-    return None
-
-
-def _month_index(label):
-    m = MONTH_RE.match(label or "")
-    if not m:
-        return None
-    month = MONTHS.index(m.group(1)) + 1
-    year = int(label.split()[-1])
-    return year * 12 + month
-
-
-def _nav_month(s, direction):
-    """direction: 'next' atau 'prev'"""
-    for name in ["Bulan berikutnya", "Next month"] if direction == "next" else ["Bulan sebelumnya", "Previous month"]:
-        try:
-            b = s.page.get_by_role("button", name=name).first
-            b.wait_for(state="visible", timeout=2500)
-            b.click()
-            s.wait()
-            return True
-        except PWTimeout:
-            continue
-    # fallback: tombol panah chevron terakhir/pertama di header datepicker
-    try:
-        btns = s.page.get_by_role("button")
-        idx = -1 if direction == "next" else 0
-        b = btns.nth(idx)
-        b.wait_for(state="visible", timeout=2500)
-        b.click()
-        s.wait()
-        return True
-    except PWTimeout:
-        return False
 
 
 def _click_schedule_day(s, day):

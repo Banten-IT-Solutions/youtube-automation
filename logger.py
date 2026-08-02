@@ -189,16 +189,6 @@ class Logger:
             self._write(f"\n  {ColorCodes.YELLOW}Tingkat sukses: {success_rate:.1f}%{ColorCodes.RESET}")
         
         self._write("")
-    
-    def save_log_file(self, filepath):
-        """Simpan semua log ke file."""
-        try:
-            os.makedirs(os.path.dirname(filepath) or ".", exist_ok=True)
-            with open(filepath, "w", encoding="utf-8") as f:
-                f.write("\n".join(self.log_lines))
-            self.success(f"Log disimpan: {filepath}")
-        except Exception as e:
-            self.error(f"Gagal simpan log: {e}")
 
 
 # Global logger instance
