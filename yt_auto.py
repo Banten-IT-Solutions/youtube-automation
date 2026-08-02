@@ -380,7 +380,7 @@ def reuse_details(s, prev_fname):
     btn.click(force=True)
     LOG("  klik Gunakan kembali")
     s.shot("01-after-reuse")
-    s.wait(3500 / 1000.0)
+    s.wait(2000 / 1000.0)  # optimasi: 3500ms -> 2000ms
 
 
 def edit_title_desc(s, num, prev_num):
@@ -578,7 +578,7 @@ def video_elements(s, prev_num, playlist, cfg):
         cb = s.page.locator(SEL_CARDS_BUTTON).first
         cb.wait_for(state="visible", timeout=8000)
         s.page.evaluate("() => document.querySelector('#cards-button').click()")
-        s.wait(3000 / 1000.0)
+        s.wait(2000 / 1000.0)  # optimasi: 3000ms -> 2000ms
         LOG("  klik #cards-button")
     except (PWTimeout, Exception) as e:
         LOG("  !! cards-button JS click gagal:", type(e).__name__)
@@ -831,7 +831,7 @@ def set_schedule_date(s, date_obj):
         if len(triggers) > 1:
             # Jika ada 2 date picker, pilih yang kedua (SPONSORS_ONLY biasanya di bawah)
             triggers[-1].click()
-            s.wait(2500 / 1000.0)
+            s.wait(1500 / 1000.0)  # optimasi: 2500ms -> 1500ms
             if s.page.locator("ytcp-scrollable-calendar").count() > 0:
                 opened = True
                 LOG(f"  kalender terbuka -> date picker untuk {vis_type}")
@@ -1171,9 +1171,9 @@ def main():
             # editor sudah terbuka dari open_editor di atas, proses langsung
             process_draft(s, num, prev_fname, sch, cfg)
             done += 1
-            page.wait_for_timeout(3000)
+            page.wait_for_timeout(2000)  # optimasi: 3000ms -> 2000ms
             page.goto(cfg["studio_url"])
-            page.wait_for_timeout(3000)
+            page.wait_for_timeout(1000)  # optimasi: 3000ms -> 1000ms (total 6s -> 3s)
             if cfg.get("pause_between_drafts"):
                 input("  [Enter utk lanjut ke draft berikutnya]")
     except StepError as e:
