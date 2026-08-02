@@ -818,8 +818,8 @@ def set_schedule_date(s, date_obj):
         if s.page.locator("ytcp-scrollable-calendar").count() > 0:
             opened = True
             LOG(f"  kalender terbuka -> date picker untuk {vis_type}")
-    except Exception as e:
-        LOG(f"  !! gagal buka kalender dari radio container: {type(e).__name__}")
+    except Exception:
+        pass
     
     # Fallback: klik #datepicker-trigger terakhir (biasanya yang kedua untuk SPONSORS_ONLY)
     if not opened:
