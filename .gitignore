@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtualenv
+.venv/
+
+# Profil browser (berisi cookies/login session - JANGAN commit)
+profile/
+
+# Data & log runtime
+thumbnails/
+logs/
+state.json
+

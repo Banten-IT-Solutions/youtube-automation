@@ -1,0 +1,30 @@
+{
+  "studio_url": "https://studio.youtube.com/channel/UCPTViCgyJPjWRDrDo5rBFCQ/videos/upload?filter=%5B%7B%22name%22%3A%22VISIBILITY%22%2C%22value%22%3A%5B%22DRAFT%22%5D%7D%5D&sort=%7B%22columnType%22%3A%22date%22%2C%22sortOrder%22%3A%22ASCENDING%22%7D",
+  "profile_dir": "profile",
+  "thumbnail_dir": "thumbnails",
+  "logs_dir": "logs",
+
+  "playlists": [
+    "Risalatul Maymuniyyah"
+  ],
+  "playlist_keywords": {
+    "Risalatul Maymuniyyah": [
+      "risalatul maymuniyyah",
+      "risalatul maymuniyah",
+      "maymuniyah",
+      "maymuniyyah"
+    ],
+    "Minhajut Tholibin": ["minhajut tholibin", "minhajuttholibin"],
+    "Ibanatul Ahkam": ["ibanatul ahkam", "ibanatulahkam"],
+    "Tadzkirotul Qurtubi": ["tadzkirotul qurtubi", "tadzkirotulqurtubi"],
+    "Sirrul Asror": ["sirrul asror", "sirrulasror"],
+    "Tafsir Jalalain": ["tafsir jalalain", "tafsirjalalain"]
+  },
+
+  "schedule_time": "20:00",
+  "schedule_offset_days": 7,
+  "date_format": "%d/%m/%Y",
+
+  "pause_between_drafts": false,
+  "wait_after_action_ms": 700
+}
