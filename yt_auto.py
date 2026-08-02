@@ -662,6 +662,27 @@ def video_elements(s, prev_num, playlist, cfg):
                 s.wait()
             except PWTimeout:
                 LOG("  !! playlist tidak ketemu di hasil - cek manual")
+    
+    # Set posisi kartu di 3 menit (00:03:00)
+    LOG("  set posisi kartu: 00:03:00")
+    try:
+        # Cari input field untuk posisi kartu (time input)
+        time_inputs = s.page.locator("input[type='text'][aria-label*='menit']")
+        if time_inputs.count() == 0:
+            time_inputs = s.page.locator("input[type='text']").filter(has_text="")
+        if time_inputs.count() > 0:
+            time_input = time_inputs.first
+            time_input.wait_for(state="visible", timeout=3000)
+            time_input.click()
+            s.wait(300 / 1000.0)
+            time_input.fill("00:03:00")
+            s.wait(500 / 1000.0)
+            LOG("  posisi kartu di-set: 00:03:00")
+        else:
+            LOG("  !! input posisi kartu tidak ketemu - posisi default")
+    except Exception as e:
+        LOG(f"  !! gagal set posisi kartu: {type(e).__name__}")
+    
     s.role_click(SEL_SAVE)
     s.shot("05-video-elements")
 
