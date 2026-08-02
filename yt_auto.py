@@ -804,36 +804,18 @@ def set_schedule_date(s, date_obj):
     # Dapatkan visibility type dari config
     vis_type = s.cfg.get("schedule_visibility_type", "PUBLISH_FROM_SPONSORS_ONLY")
     
-    # Cari date picker yang ada di container radio yang aktif
-    # Radio PUBLISH_FROM_SPONSORS_ONLY atau PUBLIC punya masing-masing date picker
+    # Strategi: klik #datepicker-trigger terakhir (biasanya yang kedua untuk SPONSORS_ONLY)
     try:
-        sc = s.page.locator("ytcp-video-visibility-select #second-container").first
-        radio_container = sc.locator(f"tp-yt-paper-radio-button[name='{vis_type}']").first
-        # Cari date picker trigger di dalam atau setelah radio container
-        parent = radio_container.locator("xpath=ancestor::*").nth(1)
-        date_trigger = parent.locator("#datepicker-trigger").first
-        date_trigger.wait_for(state="visible", timeout=4000)
-        date_trigger.click()
-        s.wait(2500 / 1000.0)
-        if s.page.locator("ytcp-scrollable-calendar").count() > 0:
-            opened = True
-            LOG(f"  kalender terbuka -> date picker untuk {vis_type}")
+        triggers = s.page.locator("#datepicker-trigger").all()
+        if len(triggers) > 1:
+            # Jika ada 2 date picker, pilih yang kedua (SPONSORS_ONLY biasanya di bawah)
+            triggers[-1].click()
+            s.wait(2500 / 1000.0)
+            if s.page.locator("ytcp-scrollable-calendar").count() > 0:
+                opened = True
+                LOG(f"  kalender terbuka -> date picker untuk {vis_type}")
     except Exception:
         pass
-    
-    # Fallback: klik #datepicker-trigger terakhir (biasanya yang kedua untuk SPONSORS_ONLY)
-    if not opened:
-        try:
-            triggers = s.page.locator("#datepicker-trigger").all()
-            if len(triggers) > 1:
-                # Jika ada 2 date picker, pilih yang kedua (SPONSORS_ONLY biasanya di bawah)
-                triggers[-1].click()
-                s.wait(2500 / 1000.0)
-                if s.page.locator("ytcp-scrollable-calendar").count() > 0:
-                    opened = True
-                    LOG("  kalender terbuka -> date picker ke-2")
-        except Exception:
-            pass
     
     # Fallback: JS click semua strategi
     if not opened:
