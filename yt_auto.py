@@ -1135,22 +1135,10 @@ def main():
     ap = argparse.ArgumentParser(description="Automasi draft YouTube Studio")
     ap.add_argument("mode", nargs="?", default="run",
                     choices=["run", "login"])
-    ap.add_argument("--num", type=int, default=None,
-                    help="proses hanya draft dengan nomor ini")
     ap.add_argument("--limit", type=int, default=None, help="maks draft diproses")
-    ap.add_argument("--last-date", type=str, default=None,
-                    help="opsional: fallback tanggal jadwal prev bila tidak ketemu, format YYYY-MM-DD")
     args = ap.parse_args()
 
     cfg = load_config()
-
-    last_date = None
-    if args.last_date:
-        try:
-            last_date = dt.date.fromisoformat(args.last_date)
-        except ValueError:
-            LOG("!! --last-date harus format YYYY-MM-DD, contoh: 2027-07-09")
-            sys.exit(2)
 
     known_dates = {}  # nama file penuh -> tanggal jadwal hasil sesi ini
 
@@ -1192,28 +1180,11 @@ def main():
                 break
 
             # pilih baris & baca identitas dari 'Nama file' di editor
-            if args.num is not None:
-                found = None
-                for i in range(rows.count()):
-                    open_editor(s, rows.nth(i))
-                    num, fname = read_file_info(s)
-                    LOG("  cek baris", i + 1, "-> nomor:", num)
-                    if num == args.num:
-                        found = (num, fname)
-                        break
-                    back_to_list(s)
-                    page.wait_for_timeout(2000)
-                if not found:
-                    LOG("Draft --num", args.num, "tidak ditemukan di list.")
-                    break
-                num, fname = found
-                LOG("  draft --num", num, "ditemukan, file:", fname)
-            else:
-                open_editor(s, rows.first)
-                num, fname = read_file_info(s)
-                if num is None:
-                    LOG("!! tidak bisa baca nomor dari Nama file - berhenti.")
-                    break
+            open_editor(s, rows.first)
+            num, fname = read_file_info(s)
+            if num is None:
+                LOG("!! tidak bisa baca nomor dari Nama file - berhenti.")
+                break
 
             # nama file video prev = ganti angka di fname dengan num-1
             prev_num = num - 1
@@ -1224,10 +1195,8 @@ def main():
             else:
                 prev_date = find_prev_schedule_date(s, prev_num, prev_fname)
             if prev_date is None:
-                prev_date = last_date  # fallback bila user beri --last-date
-            if prev_date is None:
                 LOG("!! tanggal video prev", prev_num, "tidak ditemukan di daftar terjadwal.")
-                LOG("   berikan --last-date (tanggal jadwal video {}).".format(prev_num))
+                LOG("   pastikan video prev sudah dijadwalkan atau jalankan draft secara berurutan.")
                 break
             sch = prev_date + dt.timedelta(days=cfg["schedule_offset_days"])
             sch_str = sch.strftime(cfg["date_format"])
