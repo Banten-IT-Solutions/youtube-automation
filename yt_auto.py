@@ -1,16 +1,4 @@
 #!/usr/bin/env python3
-"""
-Automation YouTube Studio: proses draft video secara berurutan.
-Alur per draft (berdasarkan rekaman capture user):
-  buka daftar draft -> klik "Detail" -> Gunakan kembali detail -> pilih video pertama (terbaru)
-  -> "Gunakan kembali" -> ganti angka di judul & deskripsi -> Upload file thumbnail
-  -> "Tampilkan setelan lanjutan" -> AI "Tidak, AI tidak digunakan" -> tanggal perekaman hari ini
-  -> Berikutnya -> (.m10n-text) Monetisasi "Aktif" -> Selesai -> Berikutnya
-  -> rating "Tidak satu pun di atas" -> Kirim rating -> Berikutnya
-  -> Impor dari video -> pilih video pertama -> Simpan
-  -> #cards-button Tambahkan -> posisi kartu -> Playlist -> cari playlist -> Simpan
-  -> Berikutnya -> Jadwalkan (Publik) = last_date + offset, jam config -> Jadwalkan -> Tutup
-"""
 
 import argparse
 import datetime as dt
@@ -27,20 +15,15 @@ from logger import init_logger, get_logger
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 
-# Logger global (diset di main())
 _logger = None
 
 def LOG(*args):
-    """Fungsi LOG lama (kompatibilitas)."""
     if _logger:
         message = " ".join(str(a) for a in args)
         _logger.debug(message)
     else:
         print("[{}]".format(time.strftime("%H:%M:%S")), *args, flush=True)
 
-# --------------------------------------------------------------------------
-# SELECTOR (berdasarkan hasil capture) - sesuaikan bila perlu
-# --------------------------------------------------------------------------
 SEL_ROW = "ytcp-video-row"
 SEL_TITLE_LINK = "a#video-title"
 SEL_EDIT_BTN = ["ytcp-button[aria-label='Detail']", "button[aria-label='Detail']", "ytcp-button:has-text('Detail')"]
@@ -84,7 +67,6 @@ SEL_SCHEDULE_BTN = ["ytcp-button#schedule-button", "ytcp-button:has-text('Jadwal
 SEL_CLOSE = ["ytcp-button:has-text('Tutup')", "button:has-text('Tutup')"]
 
 
-# --------------------------------------------------------------------------
 def load_config():
     with open(os.path.join(BASE, "config.json"), encoding="utf-8") as f:
         return json.load(f)
@@ -95,9 +77,6 @@ def today_str(fmt="%d/%m/%Y"):
 
 
 def read_file_info(s):
-    """Baca 'Nama file' dari panel info editor (ytcp-video-info).
-    Nama file berisi nomor di awal, mis. '124 PENGAJIAN KITAB ....mp4'.
-    Return (num, nama_file) atau (None, None)."""
     panel = s.page.locator("ytcp-video-info")
     try:
         panel.first.wait_for(state="visible", timeout=10000)
@@ -118,8 +97,6 @@ MONTH_ID = {
 
 
 def scheduled_url(cfg, series=None):
-    """URL daftar video terjadwal (HAS_SCHEDULE), sort terbaru di atas.
-    series = nama seri utk filter judul, mis. 'PENGAJIAN KITAB RISALATUL MAYMUNIYAH - ABUYA UCI CILONGOK'."""
     m = re.match(r"(.+?/videos)(?:/upload)?\?", cfg["studio_url"])
     base = (m.group(1) + "/upload?" if m else cfg["studio_url"].split("?")[0] + "/upload?")
     filters = [{"name": "VISIBILITY", "value": ["HAS_SCHEDULE"]}]
@@ -133,7 +110,6 @@ def scheduled_url(cfg, series=None):
 
 
 def parse_studio_date(txt):
-    """Parse tanggal '30 Jul 2027' -> dt.date."""
     m = re.search(r"(\d{1,2})\s+(\w{3})\s+(\d{4})", txt or "")
     if not m:
         return None
@@ -147,15 +123,11 @@ def parse_studio_date(txt):
 
 
 def find_prev_schedule_date(s, prev_num, prev_fname):
-     """Cari tanggal jadwal video prev di daftar terjadwal, sesuai nama file
-     (nomor + nama seri). Buka daftar terjadwal di halaman baru, cari baris
-     yang judulnya == prev_fname tanpa ekstensi, baca tanggal dari kolom tanggal.
-     Return dt.date atau None."""
      logger = get_logger()
      page = s.page
      target = (prev_fname or "").replace(".mp4", "").strip()
      series = re.sub(r"^\d+\s+", "", target).strip()
-     logger.action("Cari tanggal video", f"prev={prev_num}")
+     logger.action("Cari Tanggal Video", f"prev={prev_num}")
      spage = s.ctx.new_page()
      try:
          spage.goto(scheduled_url(s.cfg, series=series))
@@ -175,7 +147,7 @@ def find_prev_schedule_date(s, prev_num, prev_fname):
                      try:
                          dcell = rows.nth(i).locator(".tablecell-date").first
                          d = parse_studio_date(dcell.inner_text(timeout=3000))
-                         logger.result(f"Tanggal ditemukan: {d}", success=True)
+                         logger.result(f"Tanggal Ditemukan {d}", success=True)
                          return d
                      except PWTimeout:
                          return None
@@ -186,7 +158,7 @@ def find_prev_schedule_date(s, prev_num, prev_fname):
                  spage.wait_for_timeout(4000)
              except PWTimeout:
                  break
-         logger.warning(f"Video prev {prev_num} tidak ditemukan di daftar terjadwal - jadwalkan video prev dulu")
+         logger.warning(f"Video Sebelumnya {prev_num} Tidak Ditemukan")
          return None
      finally:
          spage.close()
@@ -208,9 +180,6 @@ def find_thumbnail(cfg, num):
 
 
 def find_playlist(cfg, title):
-    """Cari playlist berdasarkan keyword yang muncul di judul.
-    `playlist_keywords` = { nama_playlist: [kata kunci...] }.
-    Jika tidak terdefinisi, fallback ke substring dari `playlists`."""
     t = (title or "").lower()
     kmap = cfg.get("playlist_keywords")
     if kmap:
@@ -225,7 +194,6 @@ def find_playlist(cfg, title):
     return None
 
 
-# --------------------------------------------------------------------------
 class StepError(Exception):
     pass
 
@@ -242,9 +210,6 @@ class Studio:
         self.page.wait_for_timeout(int((t if t is not None else self.wa) * 1000))
 
     def shot(self, name, force=False):
-        """Ambil screenshot langkah kerja.
-        - Screenshot per-step hanya jika cfg['screenshots'] = true (mode debugging).
-        - Screenshot FAIL (force=True) SELALU diambil sebagai bukti saat error."""
         if not force and not self.cfg.get("screenshots", False):
             return
         try:
@@ -253,7 +218,6 @@ class Studio:
         except Exception:
             pass
 
-    # ---------- CSS-based ----------
     def click_first(self, selectors, name, timeout=12000):
         errs = []
         for sel in selectors:
@@ -281,7 +245,6 @@ class Studio:
                 continue
         return False
 
-    # ---------- Role-based (hasil codegen) ----------
     def role_click(self, name, exact=True, nth=0, timeout=12000):
         loc = self.page.get_by_role("button", name=name, exact=exact).nth(nth)
         loc.wait_for(state="visible", timeout=timeout)
@@ -322,17 +285,16 @@ class Studio:
         self.wait()
 
 
-# --------------------------------------------------------------------------
 def open_editor(s, row):
      logger = get_logger()
-     logger.action("Buka editor draft", "tombol ubah draft")
+     logger.action("Buka Editor", "Tombol Ubah Draft")
      for sel in SEL_EDIT_DRAFT_BTN:
          try:
              loc = row.locator(sel).first
              loc.wait_for(state="visible", timeout=5000)
              loc.click()
              s.wait(1500 / 1000.0)
-             logger.result(f"Draft dibuka")
+             logger.result(f"Draft")
              break
          except (PWTimeout, Exception):
              continue
@@ -343,7 +305,7 @@ def open_editor(s, row):
 
 def reuse_details(s, prev_fname):
      logger = get_logger()
-     logger.action("Salin detail video lama", "dari video sebelumnya")
+     logger.action("Gunakan Detail Video Lama", "dari Video Sebelumnya")
      s.click_first(SEL_REUSE_BTN, "Salin detail video")
      target = (prev_fname or "").replace(".mp4", "").strip()
      cards = s.page.locator(SEL_REUSE_OPTION)
@@ -357,14 +319,13 @@ def reuse_details(s, prev_fname):
              picked = cards.nth(i)
              break
      if picked is None:
-         logger.warning("Video lama tidak ditemukan, gunakan video terbaru")
+         logger.warning("Video Lama Tidak Ada")
          picked = cards.first
      picked.wait_for(state="visible", timeout=8000)
      txt = (picked.inner_text() or "").strip()[:80]
      picked.click()
-     logger.result(f"Video dipilih: {txt}", success=True)
+     logger.result(f"Video {txt}", success=True)
      s.wait(3000 / 1000.0)
-     # tombol 'Gunakan kembali' di dialog salin detail
      btn = s.page.locator(
          "ytcp-uploads-reuse-details-selection-dialog button[aria-label='Gunakan kembali']"
      ).first
@@ -374,24 +335,23 @@ def reuse_details(s, prev_fname):
              break
          s.wait(0.5)
      btn.click(force=True)
-     logger.result("Detail disalin berhasil", success=True)
+     logger.result("Detail Disalin", success=True)
      s.shot("01-after-reuse")
-     s.wait(2000 / 1000.0)  # optimasi: 3500ms -> 2000ms
+     s.wait(2000 / 1000.0)
 
 
 def edit_title_desc(s, num, prev_num):
      logger = get_logger()
-     logger.action("Ubah judul dan deskripsi", f"{prev_num} → {num}")
+     logger.action("Ubah Judul & Deskripsi", f"{prev_num} → {num}")
      t = s.role_text(SEL_TITLE_NAME, exact=False)
      d = s.role_text(SEL_DESC_NAME, exact=False)
-     # NOTE: angka di judul bisa berbeda dari prev_num bila reuse memilih video lain
      cur_t = _leading_number(t)
      cur_d = _leading_number(d)
      new_t = replace_number(t, cur_t if cur_t is not None else prev_num, num)
      new_d = replace_number(d, cur_d if cur_d is not None else prev_num, num)
      s.role_fill(SEL_TITLE_NAME, new_t, exact=False)
      s.role_fill(SEL_DESC_NAME, new_d, exact=False)
-     logger.result("Judul dan deskripsi berhasil diubah", success=True)
+     logger.result("Judul & Deskripsi Berhasil Diubah", success=True)
      s.shot("02-title-desc")
 
 
@@ -404,27 +364,23 @@ def upload_thumbnail(s, num):
      logger = get_logger()
      fp = find_thumbnail(s.cfg, num)
      if not fp:
-         logger.warning(f"Gambar sampul untuk video {num} tidak ditemukan - letakkan file di folder thumbnails/")
+         logger.warning(f"Thumbnail {num} Tidak Ada")
          return
-     logger.action("Unggah gambar sampul", os.path.basename(fp))
-     # NOTE: set file langsung ke input (tanpa klik tombol, thumbnail mungkin sudah ada)
+     logger.action("Upload Thumbnail", os.path.basename(fp))
      try:
          s.page.locator(SEL_THUMB_INPUT).first.set_input_files(fp, timeout=5000)
          s.wait(1500 / 1000.0)
-         logger.result("Gambar sampul berhasil diupload", success=True)
+         logger.result("Thumbnail Berhasil Diupload", success=True)
      except Exception as e:
-         logger.warning(f"Gagal mengunggah gambar: {e} - cek format JPG & nama file")
+         logger.warning(f"Gagal Upload {e}")
      s.shot("03-thumbnail")
 
 
 def set_recording_date(s):
-     """Set 'Tanggal perekaman' ke hari ini. Buka datepicker lalu isi lewat input
-     teks tanggal (paling andal), fallback tombol 'Hari ini', lalu klik hari."""
      logger = get_logger()
-     logger.action("Set tanggal perekaman", "hari ini")
+     logger.action("Tanggal Perekaman", "Hari Ini")
      btns = s.page.get_by_role("button", name=re.compile(SEL_REC_DATE_BTN))
      target = None
-     # HACK: rekaman memakai nth(1) => iterasi dari belakang agar kena tombol yang benar
      for i in range(btns.count() - 1, -1, -1):
          try:
              b = btns.nth(i)
@@ -434,11 +390,10 @@ def set_recording_date(s):
          except PWTimeout:
              continue
      if target is None:
-         logger.warning("Tombol Tanggal perekaman tidak ketemu - cek halaman Edit secara manual")
+         logger.warning("Tombol Tanggal Perekaman Tidak Ada")
          return
      target.click()
      s.wait()
-     # 1) isi input teks tanggal (dd/mm/yyyy) + Enter
      try:
          inp = s.page.locator("ytcp-date-picker input").first
          inp.wait_for(state="visible", timeout=4000)
@@ -448,49 +403,45 @@ def set_recording_date(s):
          try:
              popup = s.page.locator("ytcp-date-picker > tp-yt-paper-dialog").first
              popup.wait_for(state="hidden", timeout=2500)
-             logger.result(f"Tanggal perekaman: {today_str()}", success=True)
+             logger.result(f"Tanggal Perekaman {today_str()}", success=True)
              return
          except PWTimeout:
-             logger.warning("Tanggal tidak diterima lewat input, fallback klik hari")
+             logger.warning("Tanggal Salah")
      except Exception as e:
-         logger.warning(f"Input teks tanggal gagal: {type(e).__name__} - cek format dd/mm/yyyy")
-     # 2) klik angka hari ini di kalender yang tampil
+         logger.warning(f"Gagal Isi Tanggal")
      day = dt.date.today().day
      if _click_schedule_day(s, day):
-         logger.result(f"Tanggal perekaman: hari {day}", success=True)
+         logger.result(f"Tanggal Perekaman Hari {day}", success=True)
          s.wait()
-         s.page.keyboard.press("Escape")  # tutup kalender bila masih terbuka
+         s.page.keyboard.press("Escape")
          s.wait()
          return
-     # 3) tombol "Hari ini" / "Today"
      for label in ["Hari ini", "Today"]:
          try:
              tb = s.page.get_by_role("button", name=label).first
              tb.wait_for(state="visible", timeout=2500)
              tb.click()
-             logger.result(f"Tanggal perekaman: {label}", success=True)
+             logger.result(f"Tanggal Perekaman {label}", success=True)
              s.wait()
              return
          except PWTimeout:
              continue
-     logger.warning("Tanggal perekaman tidak ter-set - set manual di halaman Edit jika perlu")
+     logger.warning("Tanggal Perekaman Gagal")
      s.shot("04-recdate")
 
 
 def advanced_settings(s):
      logger = get_logger()
-     logger.action("Pengaturan lanjutan", "AI tidak, tanggal hari ini")
+     logger.action("Pengaturan Lanjutan", "AI Tidak, Tanggal Hari Ini")
      s.click_first(SEL_SHOW_MORE, "Tampilkan setelan lanjutan")
      s.radio_click(SEL_AI_NO_NAME)
      set_recording_date(s)
      s.shot("04-advanced")
      s.role_click(SEL_NEXT)
-     logger.result("Pengaturan lanjutan selesai", success=True)
+     logger.result("Pengaturan Lanjutan Selesai", success=True)
 
 
 def _rating_locked(s):
-    """True jika kuesioner rating (kesesuaian iklan) sudah terkunci, artinya
-    rating sudah pernah dikirim -> langkah rating bisa dilewati."""
     try:
         q = s.page.locator("ytpp-self-certification-questionnaire")
         if q.count() == 0:
@@ -506,30 +457,28 @@ def _rating_locked(s):
 
 def monetization(s):
      logger = get_logger()
-     logger.action("Monetisasi", "Aktif + rating")
+     logger.action("Monetisasi", "Aktif + Rating")
      loc = s.page.locator(SEL_M10N).first
      loc.wait_for(state="visible", timeout=6000)
      loc.click()
-     logger.step("Klik dropdown monetisasi", indent=2)
+     logger.step("Klik Dropdown Monetisasi", indent=2)
      s.wait()
      akt = s.page.get_by_role("radio", name=SEL_M10N_AKTIF, exact=True).first
      akt.wait_for(state="visible", timeout=6000)
      if not akt.is_checked():
          akt.click()
-         logger.result("Monetisasi diatur ke: Aktif", success=True)
+         logger.result("Monetisasi Aktif", success=True)
          s.wait()
-         # tombol 'Selesai' hanya muncul saat status DIUBAH (dari Nonaktif ke Aktif)
          try:
              s.role_click(SEL_M10N_SELESAI)
          except PWTimeout:
-             logger.warning("Tombol Selesai tidak muncul, lanjut (dropdown ditutup)")
+             logger.warning("Tombol Selesai Tidak Muncul")
              s.page.keyboard.press("Escape")
              s.wait()
      else:
-         logger.info("Monetisasi sudah Aktif - tutup dropdown")
+         logger.info("Monetisasi Sudah Aktif")
          s.page.keyboard.press("Escape")
          s.wait()
-     # pastikan dropdown tertutup agar 'Berikutnya' tidak terhalang
      try:
          akt.wait_for(state="hidden", timeout=5000)
      except PWTimeout:
@@ -537,88 +486,77 @@ def monetization(s):
          s.wait()
      s.role_click(SEL_NEXT)
      s.wait(2000 / 1000.0)
-     # -------- step rating (kuesioner kesesuaian iklan) --------
      if _rating_locked(s):
-         logger.info("Rating sudah dikirim (kuesioner terkunci) - lanjut ke langkah berikutnya")
+         logger.info("Rating Sudah Dikirim")
          s.role_click(SEL_NEXT)
          return
-     logger.action("Rating", "Atur rating iklan")
+     logger.action("Rating", "Atur Rating Iklan")
      s.text_click(SEL_RATING_NONE)
      try:
          s.role_click(SEL_RATING_SUBMIT)
      except (PWTimeout, Exception):
-         logger.warning("Kirim rating normal gagal - coba force click")
+         logger.warning("Kirim Rating Gagal")
          sub = s.page.get_by_role("button", name=SEL_RATING_SUBMIT, exact=True).first
          sub.wait_for(state="visible", timeout=6000)
          sub.click(force=True)
          s.wait()
-     logger.result("Rating dikirim", success=True)
+     logger.result("Rating Dikirim", success=True)
      s.role_click(SEL_NEXT)
 
 
 def video_elements(s, prev_num, playlist, cfg):
      logger = get_logger()
-     logger.action("Atur elemen video", "end screen dan kartu")
-     # ---------- LAYAR AKHIR ----------
-     # tombol 'Impor dari video' hanya tampil saat belum ada end screen;
-     # setelah reuse, end screen sudah ikut tersalin => tampil tombol 'Edit'.
+     logger.action("Atur Elemen Video", "End Screen & Kartu")
      imp_btn = s.page.locator("#import-from-video-button").first
      try:
          imp_btn.wait_for(state="visible", timeout=10000)
-         # belum ada end screen -> impor dari video terbaru
          s.page.evaluate("() => document.querySelector('#import-from-video-button').click()")
          s.wait(1500 / 1000.0)
          item = s.page.locator(SEL_REUSE_OPTION).first
          item.wait_for(state="visible", timeout=6000)
          item.click()
-         logger.result("Video terbaru dipilih (import end screen)", success=True)
+         logger.result("Video Terbaru Dipilih", success=True)
          s.wait()
          s.role_click(SEL_SAVE)
          s.wait(2500 / 1000.0)
      except PWTimeout:
-         logger.info("End screen tersedia (dari salin detail)")
-     # ---------- KARTU ----------
-     logger.action("Kartu", f"Playlist → {playlist or '(tidak cocok)'}")
-     # Klik #cards-button untuk buka panel kartu (seperti end screen yang langsung klik)
+         logger.info("End Screen Tersedia")
+     logger.action("Kartu", f"Playlist : {playlist or '(tidak cocok)'}")
      try:
          cb = s.page.locator(SEL_CARDS_BUTTON).first
          cb.wait_for(state="visible", timeout=8000)
          s.page.evaluate("() => document.querySelector('#cards-button').click()")
-         s.wait(2000 / 1000.0)  # optimasi: 3000ms -> 2000ms
-         logger.step("Klik #cards-button", indent=2)
+         s.wait(2000 / 1000.0)
+         logger.step("Buka Panel Kartu", indent=2)
      except (PWTimeout, Exception) as e:
-         logger.warning(f"Cards-button JS click gagal: {type(e).__name__} - cek elemen kartu secara manual")
+         logger.warning(f"Gagal Buka Panel Kartu")
          try:
              cb = s.page.locator(SEL_CARDS_BUTTON).first
              cb.click(force=True)
              s.wait(2000 / 1000.0)
          except Exception:
              pass
-     
-     # ada teks "Tambahkan kartu" = belum ada kartu (buat baru)
-     # tidak ada = kartu sudah ikut tersalin dari reuse
+
      s.wait(2000 / 1000.0)
      add_heading = s.page.get_by_text("Tambahkan kartu", exact=False)
      if add_heading.count() == 0:
-         logger.info("Kartu sudah ada dari reuse - skip, tutup panel")
+         logger.info("Kartu Sudah Ada")
          s.page.keyboard.press("Escape")
          s.wait(1500 / 1000.0)
          s.shot("05-video-elements")
          return
-     
-     logger.info("Belum ada kartu - tambahkan kartu baru")
-     # pilih tipe kartu "Playlist" dari options panel (pakai aria-label)
+
+     logger.info("Belum Ada Kartu")
      ok = s.page.evaluate(
          """() => { const el = document.querySelector(
          '[aria-label="Tambahkan kartu info yang ditautkan ke playlist"]');
          if (!el) return false; el.click(); return true; }""")
      if ok:
-         logger.step("Klik opsi tipe kartu Playlist", indent=2)
+         logger.step("Pilih Tipe Kartu Playlist", indent=2)
          s.wait(2000 / 1000.0)
      else:
-         logger.warning("Opsi Playlist tidak ketemu - cek nama playlist di config")
+         logger.warning("Opsi Playlist Tidak Ada")
      if playlist:
-         # kandidat pencocokan: config key, kata kunci, & normalisasi huruf ganda
          cands = [playlist]
          for kw in cfg.get("playlist_keywords", {}).get(playlist, []) if cfg else []:
              if kw not in cands:
@@ -634,16 +572,14 @@ def video_elements(s, prev_num, playlist, cfg):
                      loc.wait_for(state="visible", timeout=3000)
                      loc.click(force=True)
                      s.wait()
-                     logger.result(f"Playlist dipilih: {cand}", success=True)
+                     logger.result(f"Playlist Dipilih {cand}", success=True)
                      return True
                  except PWTimeout:
                      continue
              return False
 
          picked = False
-         # 1) cocokkan dari daftar yang sudah tampil (playlist terbaru)
          picked = try_pick()
-         # 2) kalau belum, isi kotak pencarian per kandidat lalu coba lagi
          for term in cands:
              if picked:
                  break
@@ -653,23 +589,21 @@ def video_elements(s, prev_num, playlist, cfg):
                      box.wait_for(state="visible", timeout=4000)
                      box.fill(term)
                      s.wait(1500 / 1000.0)
-                     logger.step(f"Cari playlist: {term}", indent=2)
+                     logger.step(f"Cari Playlist {term}", indent=2)
                      break
                  except PWTimeout:
                      continue
              picked = try_pick()
-         # 3) fallback: entity ke-3 pada daftar terbaru
          if not picked:
              try:
                  s.page.locator(SEL_CARD_ENTITY).nth(2).wait_for(state="visible", timeout=4000)
                  s.page.locator(SEL_CARD_ENTITY).nth(2).click(force=True)
-                 logger.result("Fallback: entity-card ke-3", success=True)
+                 logger.result("Gunakan Kartu Ke-3", success=True)
                  s.wait()
              except PWTimeout:
-                 logger.warning("Playlist tidak ketemu di hasil - cek ejaan & visibilitas playlist")
-     
-     # Set posisi kartu di 3 menit (00:03:00)
-     logger.step("Set posisi kartu: 00:03:00", indent=2)
+                 logger.warning("Playlist Tidak Ditemukan")
+
+     logger.step("Set Posisi Kartu 00:03:00", indent=2)
      try:
          time_inputs = s.page.locator("input[type='text'][aria-label*='menit']")
          if time_inputs.count() == 0:
@@ -681,34 +615,31 @@ def video_elements(s, prev_num, playlist, cfg):
              s.wait(300 / 1000.0)
              time_input.fill("00:03:00")
              s.wait(500 / 1000.0)
-             logger.result("Posisi kartu: 00:03:00", success=True)
+             logger.result("Posisi Kartu 00:03:00", success=True)
          else:
-             logger.warning("Input posisi kartu tidak ketemu - posisi default")
+             logger.warning("Input Posisi Kartu Tidak Ada")
      except Exception as e:
-         logger.warning(f"Gagal set posisi kartu: {type(e).__name__} - pakai posisi default")
-     
+         logger.warning(f"Gagal Set Posisi Kartu")
+
      s.role_click(SEL_SAVE)
-     logger.result("Elemen video disimpan", success=True)
+     logger.result("Elemen Video Disimpan", success=True)
      s.shot("05-video-elements")
 
 
 def schedule(s, date_obj, time_str):
      logger = get_logger()
-     logger.action("Tentukan jadwal publikasi", f"{date_obj.strftime('%d/%m/%Y')} {time_str}")
-     # dua "Berikutnya" untuk mencapai layar jadwal (sesuai rekaman)
+     logger.action("Tentukan Jadwal", f"{date_obj.strftime('%d/%m/%Y')} {time_str}")
      s.role_click(SEL_NEXT)
      s.role_click(SEL_NEXT)
-     # pilih opsi Jadwalkan (klik judul "Jadwalkan")
      sc = s.page.locator("ytcp-video-visibility-select #second-container").first
      t = sc.get_by_text("Jadwalkan", exact=True).first
      try:
          t.wait_for(state="visible", timeout=5000)
          t.click(force=True)
-         logger.step("Klik opsi: Jadwalkan", indent=2)
+         logger.step("Pilih Jadwalkan", indent=2)
          s.wait(1500 / 1000.0)
      except PWTimeout:
-         logger.warning("Gagal klik opsi Jadwalkan - cek halaman Penjadwalan secara manual")
-     # pilih radio visibility type dari config (default: PUBLISH_FROM_SPONSORS_ONLY)
+         logger.warning("Gagal Klik Jadwalkan")
      vis_type = s.cfg.get("schedule_visibility_type", "PUBLISH_FROM_SPONSORS_ONLY")
      sc = s.page.locator("ytcp-video-visibility-select #second-container").first
      radio = sc.locator(f"tp-yt-paper-radio-button[name='{vis_type}']").first
@@ -716,16 +647,16 @@ def schedule(s, date_obj, time_str):
          radio.wait_for(state="visible", timeout=4000)
          radio.click()
          label = (radio.inner_text(timeout=1000) or "").strip().replace("\n", " ")[:50]
-         logger.step(f"Pilih tipe visibilitas: {label}", indent=2)
+         logger.step(f"Pilih Visibilitas {label}", indent=2)
          s.wait(800 / 1000.0)
      except Exception as e:
-         logger.warning(f"Gagal pilih tipe visibilitas: {type(e).__name__} - set manual jika perlu")
+         logger.warning(f"Gagal Pilih Visibilitas")
      set_schedule_date(s, date_obj)
      set_schedule_time(s, time_str)
      s.shot("06-visibility")
      s.click_first(SEL_SCHEDULE_BTN, "tombol Jadwalkan")
      s.click_if_visible(SEL_CLOSE, "Tutup")
-     logger.result("Jadwal berhasil ditentukan", success=True)
+     logger.result("Jadwal Ditentukan", success=True)
      s.shot("07-scheduled")
 
 
@@ -734,9 +665,6 @@ MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
 
 
 def _click_schedule_day(s, day):
-    """Klik hari di kalender, dibatasi ke dialog datepicker yang terbuka.
-    Hindari elemen hari kabur (bulan prev/next) dengan mengecek class mute/faded
-    pada elemen maupun ancestor-nya."""
     dialog = None
     for sel in ["ytcp-date-picker:visible", "ytcp-date-range-picker:visible",
                 "ytcp-dialog[role='dialog']:visible", "[role='dialog']:visible",
@@ -768,7 +696,7 @@ def _click_schedule_day(s, day):
             candidates.append(loc)
             continue
         if html == "SKIP":
-            continue  # hari kabur dari bulan lain
+            continue
         candidates.append(loc)
     if not candidates:
         return False
@@ -777,50 +705,41 @@ def _click_schedule_day(s, day):
 
 
 def set_schedule_date(s, date_obj):
-     """Buka datepicker tanggal jadwal dari radio yang dipilih, isi input tanggal langsung, lalu Enter."""
      logger = get_logger()
-     
-     # 1. Buka kalendar dari container radio yang aktif (sesuai schedule_visibility_type)
+
      s.wait(2000 / 1000.0)
      opened = False
-     
-     # Dapatkan visibilitas dari config (default: PUBLISH_FROM_SPONSORS_ONLY)
+
      vis_type = s.cfg.get("schedule_visibility_type", "PUBLISH_FROM_SPONSORS_ONLY")
-     
-     # Strategi: klik #datepicker-trigger terakhir (biasanya yang kedua untuk SPONSORS_ONLY)
+
      try:
          triggers = s.page.locator("#datepicker-trigger").all()
          if len(triggers) > 1:
-             # Jika ada 2 date picker, pilih yang kedua (SPONSORS_ONLY biasanya di bawah)
              triggers[-1].click()
-             s.wait(1500 / 1000.0)  # optimasi: 2500ms -> 1500ms
+             s.wait(1500 / 1000.0)
              if s.page.locator("ytcp-scrollable-calendar").count() > 0:
                  opened = True
-                 logger.step(f"Kalender terbuka → date picker untuk {vis_type}", indent=2)
+                 logger.step(f"Kalender Terbuka {vis_type}", indent=2)
      except Exception:
          pass
-     
-     # Fallback: JS click semua strategi
+
      if not opened:
          try:
              s.page.evaluate("() => { const all = document.querySelectorAll('#datepicker-trigger'); if (all.length > 1) all[all.length-1].click(); else all[0].click(); }")
              s.wait(2500 / 1000.0)
              if s.page.locator("ytcp-scrollable-calendar").count() > 0:
                  opened = True
-                 logger.step("Kalender terbuka → JS click datepicker", indent=2)
+                 logger.step("Kalender Terbuka", indent=2)
          except Exception:
              pass
-     
+
      if not opened:
-         logger.warning("Tidak bisa buka kalender - skip set tanggal, atur manual jika perlu")
+         logger.warning("Kalender Tidak Bisa Dibuka")
          return
-     
-     # 2. Isi input tanggal langsung dengan format yang sesuai kalender lalu Enter
-     # Format: "24 Sep 2027" (bukan dd/mm/yyyy)
+
      month_names_short = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
      target_date_str = f"{date_obj.day} {month_names_short[date_obj.month - 1]} {date_obj.year}"
-     
-     # Coba beberapa selector berbeda untuk input tanggal
+
      input_selectors = [
          "ytcp-date-picker input[type='text']",
          "ytcp-date-picker input",
@@ -834,26 +753,22 @@ def set_schedule_date(s, date_obj):
              date_input.wait_for(state="visible", timeout=2000)
              date_input.click()
              s.wait(500 / 1000.0)
-             # pilih semua (Ctrl+A) lalu isi ulang
              date_input.press("Control+A")
              s.wait(300 / 1000.0)
              date_input.fill(target_date_str)
              s.wait(800 / 1000.0)
-             logger.step(f"Mengisi tanggal: {target_date_str}", indent=2)
-             # Tekan Enter untuk menerapkan
+             logger.step(f"Mengisi Tanggal {target_date_str}", indent=2)
              date_input.press("Enter")
              s.wait(2000 / 1000.0)
-             logger.result(f"Tanggal jadwal: {target_date_str}", success=True)
+             logger.result(f"Tanggal Jadwal {target_date_str}", success=True)
              return
          except Exception as e:
              continue
-     logger.warning("Gagal isi input tanggal - fallback ke klik kalender, cek hasil manual")
-     
-     # 3. Fallback: navigasi kalender manual (kode lama)
+     logger.warning("Gagal Isi Tanggal - Klik Kalender")
+
      target_idx = date_obj.year * 12 + date_obj.month
      target_label = f"{MONTHS[date_obj.month - 1].upper()} {date_obj.year}"
      for attempt in range(24):
-         # Cek kolom bulan yang tampil
          cal = s.page.locator("ytcp-scrollable-calendar").first
          months = cal.locator("div.calendar-month")
          found = False
@@ -865,17 +780,15 @@ def set_schedule_date(s, date_obj):
              except Exception:
                  continue
              if label == target_label:
-                 # Bulan target ketemu, klik hari di kolom ini
                  days = col.locator(f"span.calendar-day:has-text('{date_obj.day}')")
                  for j in range(days.count()):
                      day = days.nth(j)
                      try:
-                         # Cek apakah hari disabled/muted
                          cls = day.get_attribute("class") or ""
                          if "disabled" in cls or "muted" in cls or "outside" in cls:
                              continue
                          day.click()
-                         logger.result(f"Tanggal jadwal: {date_obj.day}/{date_obj.month}/{date_obj.year}", success=True)
+                         logger.result(f"Tanggal Jadwal {date_obj.day}/{date_obj.month}/{date_obj.year}", success=True)
                          s.wait(800 / 1000.0)
                          return
                      except Exception:
@@ -883,9 +796,7 @@ def set_schedule_date(s, date_obj):
                  found = True
                  break
          if found:
-             # Bulan ketemu tapi hari tidak bisa diklik
              break
-         # Bulan belum ketemu, navigasi
          cur_labels = []
          for i in range(months.count()):
              try:
@@ -896,7 +807,6 @@ def set_schedule_date(s, date_obj):
                  pass
          if not cur_labels:
              break
-         # Parse bulan pertama untuk tentukan arah navigasi
          first_label = cur_labels[0]
          parts = first_label.split()
          if len(parts) >= 2:
@@ -907,7 +817,6 @@ def set_schedule_date(s, date_obj):
                  if month:
                      cur_idx = year * 12 + month
                      if cur_idx < target_idx:
-                         # Perlu maju
                          nav = s.page.get_by_text("Bulan berikutnya", exact=True).first
                          try:
                              nav.click()
@@ -916,7 +825,6 @@ def set_schedule_date(s, date_obj):
                          except Exception:
                              pass
                      elif cur_idx > target_idx:
-                         # Perlu mundur
                          nav = s.page.get_by_text("Bulan sebelumnya", exact=True).first
                          try:
                              nav.click()
@@ -927,12 +835,11 @@ def set_schedule_date(s, date_obj):
              except Exception:
                  pass
          break
-     logger.warning("Tanggal jadwal tidak ter-set - set manual di halaman Penjadwalan")
+     logger.warning("Tanggal Jadwal Gagal")
      s.shot("06-scheddate")
 
 
 def set_schedule_time(s, time_str):
-     """Klik kolom waktu lalu pilih opsi, mis. 20:00 -> '20.00'."""
      logger = get_logger()
      option = time_str.replace(":", ".")
      for sel in SEL_SCHED_TIME:
@@ -941,7 +848,7 @@ def set_schedule_time(s, time_str):
              loc.wait_for(state="visible", timeout=3000)
              loc.click()
              s.wait()
-             logger.step(f"Klik kolom waktu → {sel}", indent=2)
+             logger.step(f"Klik Kolom Waktu", indent=2)
              break
          except Exception:
              continue
@@ -949,30 +856,25 @@ def set_schedule_time(s, time_str):
          opt = s.page.get_by_role("option", name=option).first
          opt.wait_for(state="visible", timeout=4000)
          opt.click()
-         logger.step(f"Waktu dipilih: {option}", indent=2)
+         logger.step(f"Waktu Dipilih {option}", indent=2)
          s.wait()
          return
      except PWTimeout:
-         logger.warning(f"Opsi waktu {option} tidak ketemu - set manual di halaman Penjadwalan")
+         logger.warning(f"Waktu {option} Tidak Ada")
 
 
-# --------------------------------------------------------------------------
 def process_draft(s, num, prev_fname, sch, cfg):
-     """Proses satu draft. Editor draft sudah terbuka.
-     Identitas (nomor + nama file) dibaca dari 'Nama file'.
-     prev_fname = nama file video sebelumnya (utk reuse + tanggal + playlist).
-     sch = dt.date jadwal draft ini."""
      logger = get_logger()
      prev_num = num - 1
      sch_str = sch.strftime(cfg["date_format"])
      playlist = find_playlist(cfg, prev_fname or "")
      thumbnail = find_thumbnail(cfg, num)
-     
+
      logger.start_draft(num)
      logger.separator()
-     logger.action("Konfigurasi draft", f"video {prev_num}, playlist: {playlist or '-'}")
-     logger.step(f"Jadwal: {sch_str} {cfg['schedule_time']}", indent=2)
-     logger.step(f"Gambar sampul: {thumbnail or '(tidak ditemukan)'}", indent=2)
+     logger.action("Konfigurasi Draft", f"Video {prev_num}, Playlist : {playlist or '-'}")
+     logger.step(f"Jadwal : {sch_str} {cfg['schedule_time']}", indent=2)
+     logger.step(f"Thumbnail : {thumbnail or '(tidak ditemukan)'}", indent=2)
      logger.separator()
 
      reuse_details(s, prev_fname)
@@ -982,7 +884,7 @@ def process_draft(s, num, prev_fname, sch, cfg):
      monetization(s)
      video_elements(s, prev_num, playlist, cfg)
      schedule(s, sch, cfg["schedule_time"])
-     
+
      logger.end_draft(num, success=True)
 
 
@@ -996,17 +898,16 @@ def main():
      args = ap.parse_args()
 
      cfg = load_config()
-     
-     # Setup logger
+
      log_file = os.path.join(cfg.get("logs_dir", "logs"), "yt_auto.log")
      _logger = init_logger(name="YT-AUTO", log_file=log_file, verbose=args.verbose)
-     
-     _logger.section("AUTOMASI YOUTUBE STUDIO")
-     _logger.info(f"Mode: {args.mode}")
-     if args.limit:
-         _logger.info(f"Batas draft: {args.limit}")
 
-     known_dates = {}  # nama file penuh -> tanggal jadwal hasil sesi ini
+     _logger.section("BITS YouTube Automation")
+     _logger.info(f"Mode : {args.mode}")
+     if args.limit:
+         _logger.info(f"Batas Draft {args.limit}")
+
+     known_dates = {}
 
      p = sync_playwright().start()
      ctx = p.chromium.launch_persistent_context(
@@ -1025,10 +926,10 @@ def main():
      s = None
      try:
          if args.mode == "login":
-             _logger.action("Login Mode", "tunggu konfirmasi manual")
+             _logger.action("Login Mode", "Tunggu Konfirmasi Manual")
              page.goto("https://studio.youtube.com/")
              input("  [Tekan Enter setelah login selesai]")
-             _logger.success("Login selesai")
+             _logger.success("Login Selesai")
              return
 
          _logger.info("Membuka YouTube Studio...")
@@ -1039,67 +940,63 @@ def main():
 
          done = 0
          total_drafts = 0
-         
-         # hitung total draft dulu
+
          try:
              rows = page.locator(SEL_ROW)
              rows.first.wait_for(state="attached", timeout=10000)
              total_drafts = rows.count()
-         except:  # FIXME: jangan menelan semua error tanpa log
+         except:
              pass
-         
-         _logger.progress(f"Ditemukan {total_drafts} draft")
+
+         _logger.progress(f"Ditemukan {total_drafts} Draft")
          _logger.separator()
-         
+
          while True:
              if args.limit and done >= args.limit:
-                 _logger.warning(f"Mencapai batas draft ({args.limit})")
+                 _logger.warning(f"Mencapai Batas Draft {args.limit}")
                  break
              rows = page.locator(SEL_ROW)
              rows.first.wait_for(state="attached", timeout=30000)
              if rows.count() == 0:
-                 _logger.success("Semua draft selesai.")
+                 _logger.success("Semua Draft Selesai")
                  break
 
-             # pilih baris & baca identitas dari 'Nama file' di editor
              open_editor(s, rows.first)
              num, fname = read_file_info(s)
              if num is None:
-                 _logger.error("Tidak bisa baca nomor dari Nama file - berhenti. Pastikan pola penamaan num judul")
+                 _logger.error("Nomor Tidak Terbaca Dari Nama File")
                  break
 
-             # nama file video prev = ganti angka di fname dengan num-1
              prev_num = num - 1
              prev_fname = replace_number(fname, num, prev_num) if fname else None
              if prev_fname in known_dates:
-                 prev_date = known_dates[prev_fname]  # hasil sesi ini (draft sblmnya)
-                 _logger.step(f"Pakai tanggal sesi ini untuk draft {prev_num}: {prev_date}", indent=1)
+                 prev_date = known_dates[prev_fname]
+                 _logger.step(f"Pakai Tanggal Sesi Draft {prev_num} : {prev_date}", indent=1)
              else:
                  prev_date = find_prev_schedule_date(s, prev_num, prev_fname)
              if prev_date is None:
-                 _logger.error(f"Tanggal video prev {prev_num} tidak ditemukan di daftar terjadwal - cek riwayat video {prev_num}")
-                 _logger.info("Pastikan video sebelumnya sudah dijadwalkan atau jalankan draft berurutan.")
+                 _logger.error(f"Tanggal Video Sebelumnya {prev_num} Tidak Ditemukan")
+                 _logger.info("Jadwalkan Video Sebelumnya Dulu")
                  break
              sch = prev_date + dt.timedelta(days=cfg["schedule_offset_days"])
              sch_str = sch.strftime(cfg["date_format"])
              if fname:
                  known_dates[fname] = sch
 
-             # editor sudah terbuka dari open_editor di atas, proses langsung
              process_draft(s, num, prev_fname, sch, cfg)
              done += 1
-             page.wait_for_timeout(2000)  # optimasi: 3000ms -> 2000ms
+             page.wait_for_timeout(2000)
              page.goto(cfg["studio_url"])
-             page.wait_for_timeout(1000)  # optimasi: 3000ms -> 1000ms (total 6s -> 3s)
+             page.wait_for_timeout(1000)
              if cfg.get("pause_between_drafts") and sys.stdin.isatty():
                  input("  [Tekan Enter untuk lanjut ke draft berikutnya]")
      except StepError as e:
-         _logger.error(f"{e} - cek langkah manual, lalu jalankan ulang")
+         _logger.error(f"{e}")
          if s:
              s.shot("FAIL", force=True)
          sys.exit(1)
      except Exception as e:
-         _logger.error(f"{type(e).__name__}: {e} - cek log & jalankan ulang")
+         _logger.error(f"{type(e).__name__} : {e}")
          if s:
              s.shot("FAIL", force=True)
          raise
