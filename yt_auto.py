@@ -235,11 +235,10 @@ class StepError(Exception):
 
 
 class Studio:
-    def __init__(self, page, ctx, cfg, dry=False):
+    def __init__(self, page, ctx, cfg):
         self.page = page
         self.ctx = ctx
         self.cfg = cfg
-        self.dry = dry
         self.shots = os.path.join(cfg.get("logs_dir", "logs"), "shots")
         os.makedirs(self.shots, exist_ok=True)
         self.wa = cfg.get("wait_after_action_ms", 700) / 1000.0
@@ -255,9 +254,6 @@ class Studio:
 
     # ---------- CSS-based ----------
     def click_first(self, selectors, name, timeout=12000):
-        if self.dry:
-            LOG("  [dry] klik:", name)
-            return None
         errs = []
         for sel in selectors:
             loc = self.page.locator(sel).first
@@ -272,9 +268,6 @@ class Studio:
         raise StepError("gagal klik {} -> {}".format(name, ", ".join(errs)))
 
     def click_if_visible(self, selectors, name, timeout=4000):
-        if self.dry:
-            LOG("  [dry] klik (jika ada):", name)
-            return True
         for sel in selectors:
             loc = self.page.locator(sel).first
             try:
@@ -289,9 +282,6 @@ class Studio:
 
     # ---------- Role-based (hasil codegen) ----------
     def role_click(self, name, exact=True, nth=0, timeout=12000):
-        if self.dry:
-            LOG("  [dry] klik:", name)
-            return
         loc = self.page.get_by_role("button", name=name, exact=exact).nth(nth)
         loc.wait_for(state="visible", timeout=timeout)
         loc.click()
@@ -299,9 +289,6 @@ class Studio:
         self.wait()
 
     def role_click_if_visible(self, name, exact=True, nth=0, timeout=4000):
-        if self.dry:
-            LOG("  [dry] klik (jika ada):", name)
-            return True
         try:
             self.role_click(name, exact=exact, nth=nth, timeout=timeout)
             return True
@@ -309,9 +296,6 @@ class Studio:
             return False
 
     def role_fill(self, name, text, exact=True):
-        if self.dry:
-            LOG("  [dry] isi:", name, "=", text[:40])
-            return
         loc = self.page.get_by_role("textbox", name=name, exact=exact).first
         loc.wait_for(state="visible", timeout=15000)
         loc.fill(text)
@@ -319,8 +303,6 @@ class Studio:
         self.wait()
 
     def role_text(self, name, exact=True):
-        if self.dry:
-            return ""
         loc = self.page.get_by_role("textbox", name=name, exact=exact).first
         loc.wait_for(state="visible", timeout=15000)
         try:
@@ -329,9 +311,6 @@ class Studio:
             return loc.inner_text()
 
     def radio_click(self, name, exact=True):
-        if self.dry:
-            LOG("  [dry] radio:", name)
-            return
         loc = self.page.get_by_role("radio", name=name, exact=exact).first
         loc.wait_for(state="visible", timeout=6000)
         loc.click()
@@ -339,9 +318,6 @@ class Studio:
         self.wait()
 
     def text_click(self, text, exact=True, nth=0, timeout=6000):
-        if self.dry:
-            LOG("  [dry] klik teks:", text)
-            return
         loc = self.page.get_by_text(text, exact=exact).nth(nth)
         loc.wait_for(state="visible", timeout=timeout)
         try:
@@ -373,37 +349,36 @@ def open_editor(s, row):
 def reuse_details(s, prev_fname):
     LOG("Gunakan kembali detail dari video prev sesuai nama file")
     s.click_first(SEL_REUSE_BTN, "Gunakan kembali detail")
-    if not s.dry:
-        target = (prev_fname or "").replace(".mp4", "").strip()
-        cards = s.page.locator(SEL_REUSE_OPTION)
-        picked = None
-        for i in range(cards.count()):
-            try:
-                t = cards.nth(i).inner_text(timeout=1500).strip()
-            except PWTimeout:
-                continue
-            if t and t == target:
-                picked = cards.nth(i)
-                break
-        if picked is None:
-            LOG("  !! entity prev tidak ketemu, pakai video terbaru")
-            picked = cards.first
-        picked.wait_for(state="visible", timeout=8000)
-        txt = (picked.inner_text() or "").strip()[:80]
-        picked.click()
-        LOG("  pilih video:", txt)
-        s.wait(3000 / 1000.0)
-        # klik tombol 'Gunakan kembali' di dialog reuse
-        btn = s.page.locator(
-            "ytcp-uploads-reuse-details-selection-dialog button[aria-label='Gunakan kembali']"
-        ).first
-        btn.wait_for(state="visible", timeout=15000)
-        for _ in range(60):
-            if btn.get_attribute("aria-disabled") != "true":
-                break
-            s.wait(0.5)
-        btn.click(force=True)
-        LOG("  klik Gunakan kembali")
+    target = (prev_fname or "").replace(".mp4", "").strip()
+    cards = s.page.locator(SEL_REUSE_OPTION)
+    picked = None
+    for i in range(cards.count()):
+        try:
+            t = cards.nth(i).inner_text(timeout=1500).strip()
+        except PWTimeout:
+            continue
+        if t and t == target:
+            picked = cards.nth(i)
+            break
+    if picked is None:
+        LOG("  !! entity prev tidak ketemu, pakai video terbaru")
+        picked = cards.first
+    picked.wait_for(state="visible", timeout=8000)
+    txt = (picked.inner_text() or "").strip()[:80]
+    picked.click()
+    LOG("  pilih video:", txt)
+    s.wait(3000 / 1000.0)
+    # klik tombol 'Gunakan kembali' di dialog reuse
+    btn = s.page.locator(
+        "ytcp-uploads-reuse-details-selection-dialog button[aria-label='Gunakan kembali']"
+    ).first
+    btn.wait_for(state="visible", timeout=15000)
+    for _ in range(60):
+        if btn.get_attribute("aria-disabled") != "true":
+            break
+        s.wait(0.5)
+    btn.click(force=True)
+    LOG("  klik Gunakan kembali")
     s.shot("01-after-reuse")
     s.wait(3500 / 1000.0)
 
@@ -434,23 +409,19 @@ def upload_thumbnail(s, num):
         LOG("!! thumbnail utk", num, "tidak ditemukan - LEWATI (cek thumbnails/)")
         return
     LOG("Upload thumbnail:", os.path.basename(fp))
-    if not s.dry:
-        # langsung set file ke input (tanpa klik tombol Upload, karena bisa sudah ada thumbnail)
-        try:
-            s.page.locator(SEL_THUMB_INPUT).first.set_input_files(fp, timeout=5000)
-            s.wait(1500 / 1000.0)
-            LOG("  thumbnail terpasang")
-        except Exception as e:
-            LOG(f"  !! gagal upload thumbnail: {e}")
+    # langsung set file ke input (tanpa klik tombol Upload, karena bisa sudah ada thumbnail)
+    try:
+        s.page.locator(SEL_THUMB_INPUT).first.set_input_files(fp, timeout=5000)
+        s.wait(1500 / 1000.0)
+        LOG("  thumbnail terpasang")
+    except Exception as e:
+        LOG(f"  !! gagal upload thumbnail: {e}")
     s.shot("03-thumbnail")
 
 
 def set_recording_date(s):
     """Set 'Tanggal perekaman' ke hari ini. Buka datepicker lalu isi lewat input
     teks tanggal (paling andal), fallback tombol 'Hari ini', lalu klik hari."""
-    if s.dry:
-        LOG("  [dry] tanggal perekaman:", today_str())
-        return
     btns = s.page.get_by_role("button", name=re.compile(SEL_REC_DATE_BTN))
     target = None
     # rekaman memakai nth(1) => iterasi dari belakang agar kena tombol yang benar
@@ -533,44 +504,37 @@ def _rating_locked(s):
 
 def monetization(s):
     LOG("Monetisasi aktif + rating")
-    if not s.dry:
-        loc = s.page.locator(SEL_M10N).first
-        loc.wait_for(state="visible", timeout=6000)
-        loc.click()
-        LOG("  klik .m10n-text (dropdown monetisasi)")
+    loc = s.page.locator(SEL_M10N).first
+    loc.wait_for(state="visible", timeout=6000)
+    loc.click()
+    LOG("  klik .m10n-text (dropdown monetisasi)")
+    s.wait()
+    akt = s.page.get_by_role("radio", name=SEL_M10N_AKTIF, exact=True).first
+    akt.wait_for(state="visible", timeout=6000)
+    if not akt.is_checked():
+        akt.click()
+        LOG("  radio: Aktif")
         s.wait()
-        akt = s.page.get_by_role("radio", name=SEL_M10N_AKTIF, exact=True).first
-        akt.wait_for(state="visible", timeout=6000)
-        if not akt.is_checked():
-            akt.click()
-            LOG("  radio: Aktif")
-            s.wait()
-            # tombol 'Selesai' hanya muncul saat status DIUBAH (dari Nonaktif ke Aktif)
-            try:
-                s.role_click(SEL_M10N_SELESAI)
-            except PWTimeout:
-                LOG("  !! tombol Selesai tidak muncul, lanjut (dropdown ditutup Escape)")
-                s.page.keyboard.press("Escape")
-                s.wait()
-        else:
-            LOG("  monetisasi sudah Aktif - tutup dropdown (Escape)")
-            s.page.keyboard.press("Escape")
-            s.wait()
-        # pastikan dropdown tertutup agar 'Berikutnya' tidak terhalang
+        # tombol 'Selesai' hanya muncul saat status DIUBAH (dari Nonaktif ke Aktif)
         try:
-            akt.wait_for(state="hidden", timeout=5000)
+            s.role_click(SEL_M10N_SELESAI)
         except PWTimeout:
+            LOG("  !! tombol Selesai tidak muncul, lanjut (dropdown ditutup Escape)")
             s.page.keyboard.press("Escape")
             s.wait()
     else:
-        LOG("  [dry] monetisasi: Aktif")
+        LOG("  monetisasi sudah Aktif - tutup dropdown (Escape)")
+        s.page.keyboard.press("Escape")
+        s.wait()
+    # pastikan dropdown tertutup agar 'Berikutnya' tidak terhalang
+    try:
+        akt.wait_for(state="hidden", timeout=5000)
+    except PWTimeout:
+        s.page.keyboard.press("Escape")
+        s.wait()
     s.role_click(SEL_NEXT)
     s.wait(2000 / 1000.0)
     # -------- step rating (kuesioner kesesuaian iklan) --------
-    if s.dry:
-        LOG("  [dry] rating: Tidak satu pun di atas")
-        s.role_click(SEL_NEXT)
-        return
     if _rating_locked(s):
         LOG("  rating sudah dikirim (kuesioner terkunci) - langsung Berikutnya")
         s.role_click(SEL_NEXT)
@@ -590,11 +554,6 @@ def monetization(s):
 def video_elements(s, prev_num, playlist, cfg):
     LOG("Layar akhir + kartu")
     # ---------- LAYAR AKHIR ----------
-    if s.dry:
-        LOG("  [dry] end screen: impor dari video terbaru")
-        LOG("  [dry] kartu: Playlist ->", playlist or "(tidak cocok)")
-        s.role_click(SEL_SAVE)
-        return
     # tombol 'Impor dari video' hanya tampil saat belum ada end screen;
     # setelah reuse, end screen sudah ikut tersalin => tampil tombol 'Edit'.
     imp_btn = s.page.locator("#import-from-video-button").first
@@ -751,33 +710,27 @@ def schedule(s, date_obj, time_str):
     s.role_click(SEL_NEXT)
     s.role_click(SEL_NEXT)
     # pilih opsi Jadwalkan (klik judul "Jadwalkan")
-    if s.dry:
-        LOG("  [dry] pilih Jadwalkan")
-    else:
-        sc = s.page.locator("ytcp-video-visibility-select #second-container").first
-        t = sc.get_by_text("Jadwalkan", exact=True).first
-        try:
-            t.wait_for(state="visible", timeout=5000)
-            t.click(force=True)
-            LOG("  klik judul: Jadwalkan")
-            s.wait(1500 / 1000.0)
-        except PWTimeout:
-            LOG("  !! gagal klik judul Jadwalkan")
+    sc = s.page.locator("ytcp-video-visibility-select #second-container").first
+    t = sc.get_by_text("Jadwalkan", exact=True).first
+    try:
+        t.wait_for(state="visible", timeout=5000)
+        t.click(force=True)
+        LOG("  klik judul: Jadwalkan")
+        s.wait(1500 / 1000.0)
+    except PWTimeout:
+        LOG("  !! gagal klik judul Jadwalkan")
     # pilih radio visibility type dari config (default: PUBLISH_FROM_SPONSORS_ONLY)
     vis_type = s.cfg.get("schedule_visibility_type", "PUBLISH_FROM_SPONSORS_ONLY")
-    if s.dry:
-        LOG(f"  [dry] pilih radio name={vis_type}")
-    else:
-        sc = s.page.locator("ytcp-video-visibility-select #second-container").first
-        radio = sc.locator(f"tp-yt-paper-radio-button[name='{vis_type}']").first
-        try:
-            radio.wait_for(state="visible", timeout=4000)
-            radio.click()
-            label = (radio.inner_text(timeout=1000) or "").strip().replace("\n", " ")[:50]
-            LOG(f"  pilih radio: {vis_type} ({label})")
-            s.wait(800 / 1000.0)
-        except Exception as e:
-            LOG(f"  !! gagal pilih radio {vis_type}: {type(e).__name__}")
+    sc = s.page.locator("ytcp-video-visibility-select #second-container").first
+    radio = sc.locator(f"tp-yt-paper-radio-button[name='{vis_type}']").first
+    try:
+        radio.wait_for(state="visible", timeout=4000)
+        radio.click()
+        label = (radio.inner_text(timeout=1000) or "").strip().replace("\n", " ")[:50]
+        LOG(f"  pilih radio: {vis_type} ({label})")
+        s.wait(800 / 1000.0)
+    except Exception as e:
+        LOG(f"  !! gagal pilih radio {vis_type}: {type(e).__name__}")
     set_schedule_date(s, date_obj)
     set_schedule_time(s, time_str)
     s.shot("06-visibility")
@@ -881,9 +834,6 @@ def _click_schedule_day(s, day):
 
 def set_schedule_date(s, date_obj):
     """Buka datepicker tanggal jadwal dari radio yang dipilih, isi input tanggal langsung, lalu Enter."""
-    if s.dry:
-        LOG("  [dry] tanggal jadwal:", date_obj.strftime("%d/%m/%Y"))
-        return
     
     # 1. Buka kalendar dari container radio yang aktif (sesuai schedule_visibility_type)
     s.wait(2000 / 1000.0)
@@ -1135,9 +1085,6 @@ def set_schedule_date(s, date_obj):
 
 def set_schedule_time(s, time_str):
     """Klik kolom waktu lalu pilih opsi, mis. 20:00 -> '20.00'."""
-    if s.dry:
-        LOG("  [dry] waktu jadwal:", time_str)
-        return
     option = time_str.replace(":", ".")
     for sel in SEL_SCHED_TIME:
         loc = s.page.locator(sel).first
@@ -1187,7 +1134,7 @@ def process_draft(s, num, prev_fname, sch, cfg):
 def main():
     ap = argparse.ArgumentParser(description="Automasi draft YouTube Studio")
     ap.add_argument("mode", nargs="?", default="run",
-                    choices=["run", "list", "login", "dryrun"])
+                    choices=["run", "list", "login"])
     ap.add_argument("--num", type=int, default=None,
                     help="proses hanya draft dengan nomor ini")
     ap.add_argument("--limit", type=int, default=None, help="maks draft diproses")
@@ -1240,9 +1187,7 @@ def main():
                 LOG(i + 1, "->", t)
             return
 
-        s = Studio(page, ctx, cfg, dry=(args.mode == "dryrun"))
-        if args.mode == "dryrun":
-            LOG("MODE DRY-RUN: buka tiap draft, baca 'Nama file', cetak rencana (tanpa ubah apa pun).")
+        s = Studio(page, ctx, cfg)
 
         done = 0
         while True:
@@ -1271,16 +1216,6 @@ def main():
                     break
                 num, fname = found
                 LOG("  draft --num", num, "ditemukan, file:", fname)
-            elif args.mode == "dryrun":
-                if done >= rows.count():
-                    break
-                open_editor(s, rows.nth(done))
-                num, fname = read_file_info(s)
-                if num is None:
-                    LOG("!! baris", done + 1, "tidak bisa baca nomor dari Nama file - lewati.")
-                    back_to_list(s)
-                    done += 1
-                    continue
             else:
                 open_editor(s, rows.first)
                 num, fname = read_file_info(s)
@@ -1306,20 +1241,6 @@ def main():
             sch_str = sch.strftime(cfg["date_format"])
             if fname:
                 known_dates[fname] = sch
-
-            if s.dry:
-                playlist = find_playlist(cfg, fname or "")
-                LOG("=" * 60)
-                LOG("PLAN draft:", num, "| file:", fname or "-",
-                    "| prev:", prev_num, "| playlist:", playlist or "-")
-                LOG("  prev jadwal:", prev_date.isoformat())
-                LOG("  jadwal:", sch_str, cfg["schedule_time"])
-                LOG("  thumbnail:", find_thumbnail(cfg, num))
-                done += 1
-                back_to_list(s)
-                page.goto(cfg["studio_url"])
-                page.wait_for_timeout(4000)
-                continue
 
             # editor sudah terbuka dari open_editor di atas, proses langsung
             process_draft(s, num, prev_fname, sch, cfg)
