@@ -20,6 +20,7 @@
   },
 
   "schedule_time": "20:00",
+  "timezone": "Asia/Jakarta",
   "schedule_offset_days": 7,
   "schedule_visibility_type": "PUBLISH_FROM_SPONSORS_ONLY",
   "date_format": "%d/%m/%Y",

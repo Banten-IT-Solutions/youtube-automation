@@ -910,11 +910,15 @@ def main():
      known_dates = {}
 
      p = sync_playwright().start()
+     # Timezone wajib diset agar dropdown jadwal YouTube Studio memakai zona waktu yang sama.
+     # Tanpa ini, browser memakai TZ sistem (mis. UTC) sehingga "20:00" jadi 20:00 UTC = 03:00 WIB.
+     tz = cfg.get("timezone", "Asia/Jakarta")
      ctx = p.chromium.launch_persistent_context(
          user_data_dir=os.path.join(BASE, cfg["profile_dir"]),
          channel="chrome",
          headless=True,
          viewport={"width": 1366, "height": 900},
+         timezone_id=tz,
          user_agent=(
              "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
              "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"

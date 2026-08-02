@@ -6,6 +6,7 @@ services:
     container_name: youtube-automation
     environment:
       - PYTHONUNBUFFERED=1
+      - TZ=Asia/Jakarta
     volumes:
       - ./profile:/app/profile              # Persistent login session
       - ./thumbnails:/app/thumbnails        # Thumbnail files
