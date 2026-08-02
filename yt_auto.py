@@ -573,73 +573,28 @@ def video_elements(s, prev_num, playlist, cfg):
         LOG("  end screen sudah ada (hasil reuse) - lewati")
     # ---------- KARTU ----------
     LOG("Kartu: Playlist ->", playlist or "(tidak cocok)")
-    # klik #cards-button untuk buka panel kartu
+    # Cek apakah tombol "Tambahkan" ada (seperti end screen)
+    add_btn = s.page.locator("#cards-button").first
     try:
-        cb = s.page.locator(SEL_CARDS_BUTTON).first
-        cb.wait_for(state="visible", timeout=8000)
-        s.page.evaluate("() => document.querySelector('#cards-button').click()")
-        s.wait(3000 / 1000.0)
-        LOG("  klik #cards-button")
+        add_btn.wait_for(state="visible", timeout=8000)
+        # Cek aria-label untuk tau status kartu
+        aria_label = add_btn.get_attribute("aria-label") or ""
+        if "Tambahkan" in aria_label or "Add" in aria_label:
+            LOG("  belum ada kartu (tombol 'Tambahkan' terdeteksi) - tambahkan kartu baru")
+            # Klik button untuk buka panel
+            s.page.evaluate("() => document.querySelector('#cards-button').click()")
+            s.wait(3000 / 1000.0)
+            LOG("  klik #cards-button")
+        else:
+            LOG("  kartu sudah ada dari reuse (tombol berubah jadi 'Edit') - skip")
+            s.shot("05-video-elements")
+            return
     except (PWTimeout, Exception) as e:
-        LOG("  !! cards-button JS click gagal:", type(e).__name__)
-        try:
-            cb = s.page.locator(SEL_CARDS_BUTTON).first
-            cb.click(force=True)
-            s.wait(2000 / 1000.0)
-        except Exception:
-            pass
-    
-    # cek button: "Tambahkan" (belum ada kartu) atau "Edit" (sudah ada kartu)
-    # Batasi scope ke dalam panel kartu saja untuk menghindari button Edit lain
-    s.wait(2000 / 1000.0)
-    
-    # Cek di dalam panel ytve-info-cards-editor
-    cards_editor = s.page.locator("ytve-info-cards-editor").first
-    edit_btn_in_panel = cards_editor.get_by_role("button", name="Edit", exact=True)
-    add_btn_in_panel = cards_editor.get_by_role("button", name="Tambahkan", exact=True)
-    
-    if edit_btn_in_panel.count() > 0:
-        LOG("  kartu sudah ada (tombol 'Edit' terdeteksi di panel) - skip, klik Hapus perubahan")
-        try:
-            s.page.get_by_role("button", name="Hapus perubahan", exact=True).first.click(timeout=3000)
-            s.wait(1500 / 1000.0)
-            LOG("  klik: Hapus perubahan (panel tertutup)")
-        except PWTimeout:
-            LOG("  !! tombol Hapus perubahan tidak ketemu, coba Escape")
-            s.page.keyboard.press("Escape")
-            s.wait()
+        LOG("  !! cards-button tidak ketemu:", type(e).__name__)
         s.shot("05-video-elements")
         return
-    elif add_btn_in_panel.count() > 0:
-        LOG("  belum ada kartu (tombol 'Tambahkan' terdeteksi di panel) - tambahkan kartu baru")
-    else:
-        # fallback: cek di seluruh halaman
-        edit_btn = s.page.get_by_role("button", name="Edit", exact=True)
-        add_btn = s.page.get_by_role("button", name="Tambahkan", exact=True)
-        
-        if edit_btn.count() > 0:
-            LOG("  kartu sudah ada (tombol 'Edit' terdeteksi) - skip, klik Hapus perubahan")
-            try:
-                s.page.get_by_role("button", name="Hapus perubahan", exact=True).first.click(timeout=3000)
-                s.wait(1500 / 1000.0)
-                LOG("  klik: Hapus perubahan (panel tertutup)")
-            except PWTimeout:
-                LOG("  !! tombol Hapus perubahan tidak ketemu, coba Escape")
-                s.page.keyboard.press("Escape")
-                s.wait()
-            s.shot("05-video-elements")
-            return
-        elif add_btn.count() == 0:
-            LOG("  tidak ada tombol Tambahkan - skip")
-            try:
-                s.page.get_by_role("button", name="Hapus perubahan", exact=True).first.click(timeout=3000)
-                s.wait(1500 / 1000.0)
-            except PWTimeout:
-                s.page.keyboard.press("Escape")
-                s.wait()
-            s.shot("05-video-elements")
-            return
-        LOG("  belum ada kartu (tombol 'Tambahkan' terdeteksi) - tambahkan kartu baru")
+    
+    # Tambahkan kartu playlist baru
     # pilih tipe kartu "Playlist" dari options panel (pakai aria-label)
     ok = s.page.evaluate(
         """() => { const el = document.querySelector(
