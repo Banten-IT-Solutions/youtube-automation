@@ -5,14 +5,12 @@
   "logs_dir": "logs",
 
   "playlists": [
-    "Risalatul Maymuniyyah"
+    "Risalatul Maymuniyah"
   ],
   "playlist_keywords": {
-    "Risalatul Maymuniyyah": [
-      "risalatul maymuniyyah",
+    "Risalatul Maymuniyah": [
       "risalatul maymuniyah",
-      "maymuniyah",
-      "maymuniyyah"
+      "maymuniyah"
     ],
     "Minhajut Tholibin": ["minhajut tholibin", "minhajuttholibin"],
     "Ibanatul Ahkam": ["ibanatul ahkam", "ibanatulahkam"],
@@ -23,6 +21,7 @@
 
   "schedule_time": "20:00",
   "schedule_offset_days": 7,
+  "schedule_visibility_type": "PUBLISH_FROM_SPONSORS_ONLY",
   "date_format": "%d/%m/%Y",
 
   "pause_between_drafts": false,
