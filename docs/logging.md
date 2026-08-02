@@ -31,14 +31,19 @@ Sistem logging dirancang user-friendly dengan:
 
 ### Standar Pesan Warning/Error
 
-Pesan **warning** dan **error** selalu menyertakan **solusi singkat** setelah ` - `:
+Pesan **warning** dan **error** ditulis **ringkas** dengan **semua kata dikapitalisasi** (Capitalize), tanpa bagian solusi panjang:
 
 ```
-⚠️  Gambar sampul untuk 5 tidak ditemukan - letakkan file di folder thumbnails/
-❌  Tidak bisa baca nomor dari Nama file - berhenti. Pastikan pola penamaan num judul
+⚠️  Thumbnail 5 Tidak Ada
+❌  Nomor Tidak Terbaca Dari Nama File
+⚠️  Gagal Upload TimeoutError
 ```
 
-Format: `masalah - solusi singkat` (bukan sekadar "cek manual").
+Aturan:
+- **Capitalize semua kata** (`Thumbnail Berhasil Diupload`, bukan `Gambar sampul berhasil diupload`)
+- **Ringkas** — hanya inti masalah, tanpa solusi ` - ...`
+- **Pemisah label-nilai** memakai spasi di kedua sisi tanda titik dua (` : `), contoh: `Total Draft Yang Diproses : 10`
+- **Kekecualian**: format waktu tidak diberi spasi (`00:03:00`, `00:15:30`)
 
 ---
 
@@ -81,27 +86,37 @@ python3 yt_auto.py run --verbose
 
 ```
 [10:08:24] ⏳  Draft 1/10 - Dimulai
-[10:08:25] ℹ️  Informasi draft
-[10:08:26] ▶️  Salin detail video lama
-[10:08:26]     ▶️  Pilih video sebelumnya
-[10:08:27]     ✓ Video dipilih: 1 PENGAJIAN KITAB
-[10:08:28] ▶️  Ubah judul dan deskripsi
-[10:08:28]     ✓ Judul dan deskripsi berhasil diubah
-[10:08:29] ▶️  Unggah gambar sampul
-[10:08:30]     ✓ Gambar sampul berhasil diupload
-[10:08:31] ▶️  Pengaturan lanjutan
-[10:08:32] ▶️  Aktifkan monetisasi & rating
+[10:08:25] ▶️  Konfigurasi Draft → Video 135, Playlist : Risalatul Maymuniyah
+[10:08:25]     ▶️  Jadwal : 10/08/2026 07:00
+[10:08:25]     ▶️  Thumbnail : 135.jpg
+[10:08:26] ▶️  Cari Tanggal Video
+[10:08:27]     ✓ Tanggal Ditemukan 05/08/2026
+[10:08:28] ▶️  Buka Editor
+[10:08:29] ▶️  Gunakan Detail Video Lama
+[10:08:30]     ✓ Video 1 PENGAJIAN KITAB
+[10:08:30]     ✓ Detail Disalin
+[10:08:31] ▶️  Ubah Judul & Deskripsi → 1 → 135
+[10:08:32]     ✓ Judul & Deskripsi Berhasil Diubah
+[10:08:33] ▶️  Upload Thumbnail → 135.jpg
+[10:08:34]     ✓ Thumbnail Berhasil Diupload
+[10:08:35] ▶️  Tanggal Perekaman → Hari Ini
+[10:08:36]     ✓ Tanggal Perekaman 02/08/2026
+[10:08:37] ▶️  Pengaturan Lanjutan → AI Tidak, Tanggal Hari Ini
+[10:08:38]     ✓ Pengaturan Lanjutan Selesai
+[10:08:39] ▶️  Monetisasi → Aktif + Rating
+[10:08:40] ▶️  Atur Elemen Video → End Screen & Kartu
+[10:08:41]     ✓ Kartu → Playlist : Risalatul Maymuniyah
 [10:08:45] ✅  Draft 1 - Selesai ✓
 ```
 
 ### Warning & Error
 
 ```
-[10:08:24] ⚠️  Gambar sampul untuk 5 tidak ditemukan - letakkan file di folder thumbnails/
-[10:08:25] ▶️  Unggah gambar sampul → (tidak ditemukan)
-[10:08:25] ⚠️  Gagal mengunggah gambar - cek format JPG & nama file
+[10:08:24] ⚠️  Thumbnail 5 Tidak Ada
+[10:08:25] ▶️  Upload Thumbnail → 5.jpg
+[10:08:25] ⚠️  Gagal Upload TimeoutError
 
-[10:08:30] ❌  Tidak bisa baca nomor dari Nama file - berhenti. Pastikan pola penamaan num judul
+[10:08:30] ❌  Nomor Tidak Terbaca Dari Nama File
 [10:08:31] ❌  Draft 1 - Gagal ✗
 ```
 
@@ -114,22 +129,22 @@ Di akhir eksekusi:
   RINGKASAN HASIL
 ════════════════════════════════════════════════════════════
 
-  Total draft diproses: 10
-  ✅ Berhasil: 10
-  ❌ Gagal: 0
-  ⏱️  Waktu total: 00:15:30
+  Total Draft Yang Diproses : 10
+  ✅ Berhasil : 10
+  ❌ Gagal : 0
+  ⏱️  Waktu total : 00:15:30
 
   🎉 Semua draft berhasil diproses!
 ```
 
 Jika ada error:
 ```
-  Total draft diproses: 10
-  ✅ Berhasil: 8
-  ❌ Gagal: 2
-  ⏱️  Waktu total: 00:14:20
+  Total Draft Yang Diproses : 10
+  ✅ Berhasil : 8
+  ❌ Gagal : 2
+  ⏱️  Waktu total : 00:14:20
 
-  Tingkat sukses: 80.0%
+  Tingkat sukses : 80.0%
 ```
 
 ---
