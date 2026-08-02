@@ -31,7 +31,19 @@ bash run.sh test
 bash run.sh run 10
 ```
 
-> Alternatif dengan Makefile: `make setup` / `make login` / `make test` / `make run LIMIT=10`.
+### Metode 1b — Lokal dengan Makefile
+
+Semua perintah di atas bisa dipakai lewat `make` (pastikan `make` terinstall):
+
+```bash
+make setup          # setup: venv + dependencies + Chromium
+make login          # login ke YouTube Studio (sekali saja)
+make test           # test dengan 1 draft
+make run            # jalankan semua draft
+make run LIMIT=10   # jalankan 10 draft
+make status         # cek status setup
+make help           # tampilkan semua perintah
+```
 
 ### Metode 2 — Docker
 
@@ -51,11 +63,11 @@ docker-compose run --rm youtube-automation python yt_auto.py run
 
 **Lokal vs Docker:**
 
-| Aspek | Lokal (venv) | Docker |
-|-------|--------------|--------|
-| Setup | `bash setup.sh` | `docker-compose build` |
-| Login | `bash run.sh login` | `docker-compose run --rm ... login` |
-| Run | `bash run.sh run 10` | `docker-compose run --rm ... run --limit 10` |
+| Aspek | Lokal (venv / make) | Docker |
+|-------|---------------------|--------|
+| Setup | `bash setup.sh` / `make setup` | `docker-compose build` |
+| Login | `bash run.sh login` / `make login` | `docker-compose run --rm ... login` |
+| Run | `bash run.sh run 10` / `make run LIMIT=10` | `docker-compose run --rm ... run --limit 10` |
 | Cocok untuk | Development / testing cepat | Production / multi-platform |
 
 ## 📚 Dokumentasi
