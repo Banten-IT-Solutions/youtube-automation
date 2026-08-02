@@ -1134,7 +1134,7 @@ def process_draft(s, num, prev_fname, sch, cfg):
 def main():
     ap = argparse.ArgumentParser(description="Automasi draft YouTube Studio")
     ap.add_argument("mode", nargs="?", default="run",
-                    choices=["run", "list", "login"])
+                    choices=["run", "login"])
     ap.add_argument("--num", type=int, default=None,
                     help="proses hanya draft dengan nomor ini")
     ap.add_argument("--limit", type=int, default=None, help="maks draft diproses")
@@ -1178,14 +1178,6 @@ def main():
 
         page.goto(cfg["studio_url"])
         page.wait_for_timeout(4000)
-
-        if args.mode == "list":
-            rows = page.locator(SEL_ROW)
-            rows.first.wait_for(state="attached", timeout=30000)
-            for i in range(rows.count()):
-                t = rows.nth(i).locator(SEL_TITLE_LINK).inner_text()
-                LOG(i + 1, "->", t)
-            return
 
         s = Studio(page, ctx, cfg)
 
