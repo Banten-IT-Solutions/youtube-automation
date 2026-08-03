@@ -172,14 +172,20 @@ def find_thumbnail(cfg, num, fname=None):
      d = cfg["thumbnail_dir"]
      if not os.path.isdir(d):
          return None
-     # Jika fname tersedia, cari thumbnail yang match dengan series name (lebih spesifik)
+     
+     # Jika fname tersedia, ekstrak series name dan cari thumbnail dengan series + num baru
      if fname:
          fname_base = (fname or "").replace(".mp4", "").strip()
-         # Cari file yang berisi series name + number, atau filename exact
-         for pat in [fname_base + "*", "{}[ _-]*".format(num) + "*"]:
-             hits = sorted(glob.glob(os.path.join(d, pat)))
-             if hits:
-                 return hits[0]
+         # Ekstrak series name (hapus nomor di depan)
+         # "100 PENGAJIAN KITAB SIRRUL ASROR..." → "PENGAJIAN KITAB SIRRUL ASROR..."
+         series = re.sub(r"^\d+\s+", "", fname_base).strip()
+         
+         if series:
+             # Cari file dengan num dan series name (case-insensitive)
+             for f in os.listdir(d):
+                 if f.lower().startswith(str(num)) and series.lower() in f.lower():
+                     return os.path.join(d, f)
+     
      # Fallback: cari berdasarkan number saja
      for pat in ["{}[ _-]*.*".format(num), "{}*.*".format(num)]:
          hits = sorted(glob.glob(os.path.join(d, pat)))
