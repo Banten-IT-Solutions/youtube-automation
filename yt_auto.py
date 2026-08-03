@@ -314,6 +314,7 @@ def reuse_details(s, prev_fname):
       picked = None
       picked_txt = None
       
+      # Coba cari di kartu yang sudah visible
       for i in range(cards.count()):
           try:
               t = cards.nth(i).inner_text(timeout=1500).strip()
@@ -326,12 +327,46 @@ def reuse_details(s, prev_fname):
           except PWTimeout:
               continue
       
+      # Jika tidak ketemu, coba search menggunakan search input di dialog
+      if picked is None:
+          logger.step("Cari di search box", indent=2)
+          search_input = None
+          for sel in ["ytcp-dialog input[type='text']", "input[placeholder*='Telusuri']", "input[aria-label*='Telusuri']"]:
+              try:
+                  inp = s.page.locator(sel).first
+                  inp.wait_for(state="visible", timeout=2000)
+                  search_input = inp
+                  break
+              except:
+                  continue
+          
+          if search_input:
+              try:
+                  search_input.fill(target)
+                  search_input.press("Enter")
+                  s.wait(2000 / 1000.0)  # tunggu hasil search muncul
+                  
+                  # Loop kartu lagi setelah search
+                  cards = s.page.locator(SEL_REUSE_OPTION)
+                  for i in range(cards.count()):
+                      try:
+                          t = cards.nth(i).inner_text(timeout=1500).strip()
+                          t_normalized = re.sub(r'\s+', ' ', t.lower())
+                          if t_normalized == target_normalized or target_normalized in t_normalized:
+                              picked = cards.nth(i)
+                              picked_txt = t
+                              break
+                      except PWTimeout:
+                          continue
+              except Exception as e:
+                  logger.warning(f"Gagal search di dialog: {e}")
+      
       if picked is None:
           logger.error(f"Video Sebelumnya '{target}' Tidak Ditemukan di Dialog Reuse")
           available = []
-          for i in range(min(3, cards.count())):
+          for i in range(min(3, s.page.locator(SEL_REUSE_OPTION).count())):
               try:
-                  available.append(cards.nth(i).inner_text(timeout=1000).strip()[:60])
+                  available.append(s.page.locator(SEL_REUSE_OPTION).nth(i).inner_text(timeout=1000).strip()[:60])
               except:
                   pass
           if available:
