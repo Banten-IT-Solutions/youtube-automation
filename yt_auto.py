@@ -603,22 +603,7 @@ def video_elements(s, prev_num, playlist, cfg):
      
      logger.action("Kartu", f"Playlist : {playlist or '(tidak cocok)'}")
      
-     # CHECK EXISTING CARD SEBELUM BUKA DIALOG
-     # Cek apakah ada card button yang menunjukkan existing card
-     card_btn = s.page.locator(SEL_CARDS_BUTTON).first
-     try:
-         card_btn.wait_for(state="visible", timeout=5000)
-         # Cek indicator existing card sebelum dialog buka
-         # Jika ada aria-label "Hapus kartu" atau similar, berarti sudah ada card
-         has_card = s.page.locator("[aria-label*='Hapus']").count() > 0
-         if has_card:
-             logger.info("Kartu Sudah Ada (detected sebelum dialog)")
-             s.shot("05-video-elements")
-             return
-     except:
-         pass
-     
-     # Jika belum ada card, buka dialog
+     # Buka dialog kartu (check apakah sudah ada card akan dilakukan inside dialog)
      try:
          cb = s.page.locator(SEL_CARDS_BUTTON).first
          cb.wait_for(state="visible", timeout=8000)
