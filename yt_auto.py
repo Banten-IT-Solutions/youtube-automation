@@ -618,15 +618,30 @@ def video_elements(s, prev_num, playlist, cfg):
 
      s.wait(2000 / 1000.0)
      # Check apakah sudah ada kartu existing
-     existing_cards = s.page.locator("ytcp-video-card-list-item").all()
-     if len(existing_cards) > 0:
-         logger.info(f"Kartu Sudah Ada ({len(existing_cards)} kartu)")
+     # Cek beberapa selector untuk deteksi existing card
+     existing_card_indicators = [
+         s.page.locator("ytcp-video-card-list-item"),
+         s.page.locator("[aria-label*='Hapus']").filter(has_text="Hapus"),  # "Hapus kartu" button
+         s.page.locator("ytcp-video-card"),
+     ]
+     
+     has_existing_card = False
+     for indicator in existing_card_indicators:
+         try:
+             if indicator.count() > 0:
+                 has_existing_card = True
+                 logger.info(f"Kartu Sudah Ada (detected via selector)")
+                 break
+         except:
+             continue
+     
+     if has_existing_card:
          s.page.keyboard.press("Escape")
          s.wait(1500 / 1000.0)
          s.shot("05-video-elements")
          return
      
-     # Fallback: cek apakah tombol "Tambahkan" ada
+     # Fallback: cek apakah tombol "Tambahkan" visible (indikator belum ada card)
      add_heading = s.page.get_by_text("Tambahkan kartu", exact=False)
      if add_heading.count() == 0:
          logger.info("Kartu Sudah Ada (tidak ada tombol Tambahkan)")
