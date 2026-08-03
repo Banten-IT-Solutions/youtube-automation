@@ -263,7 +263,7 @@ class Studio:
     def role_click(self, name, exact=True, nth=0, timeout=12000):
         loc = self.page.get_by_role("button", name=name, exact=exact).nth(nth)
         loc.wait_for(state="visible", timeout=timeout)
-        loc.click()
+        loc.click(force=True)
         LOG("  klik:", name)
         self.wait()
 
