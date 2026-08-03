@@ -351,9 +351,11 @@ def reuse_details(s, prev_fname):
           
           if search_input:
               try:
-                  # Click dengan force=True untuk bypass overlay
+                  # Click 2x untuk fokus (YouTube UI quirk)
                   search_input.click(force=True)
-                  s.wait(300 / 1000.0)
+                  s.wait(200 / 1000.0)
+                  search_input.click(force=True)
+                  s.wait(200 / 1000.0)
                   search_input.fill("")  # clear dulu
                   s.wait(200 / 1000.0)
                   search_input.type(target, delay=30)  # type perlahan
