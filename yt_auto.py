@@ -617,15 +617,25 @@ def video_elements(s, prev_num, playlist, cfg):
              pass
 
      s.wait(2000 / 1000.0)
+     # Check apakah sudah ada kartu existing
+     existing_cards = s.page.locator("ytcp-video-card-list-item").all()
+     if len(existing_cards) > 0:
+         logger.info(f"Kartu Sudah Ada ({len(existing_cards)} kartu)")
+         s.page.keyboard.press("Escape")
+         s.wait(1500 / 1000.0)
+         s.shot("05-video-elements")
+         return
+     
+     # Fallback: cek apakah tombol "Tambahkan" ada
      add_heading = s.page.get_by_text("Tambahkan kartu", exact=False)
      if add_heading.count() == 0:
-         logger.info("Kartu Sudah Ada")
+         logger.info("Kartu Sudah Ada (tidak ada tombol Tambahkan)")
          s.page.keyboard.press("Escape")
          s.wait(1500 / 1000.0)
          s.shot("05-video-elements")
          return
 
-     logger.info("Belum Ada Kartu")
+     logger.info("Belum Ada Kartu - Tambahkan Baru")
      ok = s.page.evaluate(
          """() => { const el = document.querySelector(
          '[aria-label="Tambahkan kartu info yang ditautkan ke playlist"]');
