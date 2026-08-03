@@ -342,22 +342,24 @@ def reuse_details(s, prev_fname):
           except PWTimeout:
               continue
       
-      # Jika tidak ketemu, coba search menggunakan search input di dialog
+      # Jika tidak ketemu, cari menggunakan search input dengan selector yang tepat
       if picked is None:
           logger.step("Cari di search box", indent=2)
           search_input = None
-          for sel in ["ytcp-dialog input[type='text']", "input[placeholder*='Telusuri']", "input[aria-label*='Telusuri']"]:
+          # Selector khusus untuk search input di dialog reuse
+          for sel in ["input#search-yours", "ytcp-video-pick-dialog input[placeholder*='Telusuri']", "ytcp-video-pick-dialog input"]:
               try:
                   inp = s.page.locator(sel).first
                   inp.wait_for(state="visible", timeout=2000)
                   search_input = inp
+                  logger.step(f"Search input found: {sel}", indent=3)
                   break
               except:
                   continue
           
           if search_input:
               try:
-                  # Click 2x untuk fokus (YouTube UI quirk)
+                  # Click 2x untuk fokus
                   search_input.click(force=True)
                   s.wait(200 / 1000.0)
                   search_input.click(force=True)
@@ -369,7 +371,7 @@ def reuse_details(s, prev_fname):
                   search_input.press("Enter")  # submit search
                   s.wait(500 / 1000.0)
                   logger.step(f"Search: {target[:50]}...", indent=3)
-                  s.wait(3000 / 1000.0)  # tunggu lebih lama untuk hasil
+                  s.wait(3000 / 1000.0)  # tunggu lebih lama untuk hasil filter
                   
                   # Loop kartu lagi setelah search
                   cards = s.page.locator(SEL_REUSE_OPTION)
@@ -386,16 +388,17 @@ def reuse_details(s, prev_fname):
               except Exception as e:
                   logger.warning(f"Gagal search di dialog: {e}")
       
-      # Jika masih tidak ketemu: gunakan recent video (first card) sebagai fallback
       if picked is None:
-          logger.warning(f"Video Sebelumnya '{target}' Tidak Ditemukan")
-          logger.step("Gunakan video terakhir yang tersedia sebagai fallback", indent=2)
-          if cards.count() > 0:
-              picked = cards.first
-              picked_txt = (picked.inner_text() or "").strip()[:80]
-          else:
-              logger.error("Tidak ada video apapun di dialog reuse")
-              raise StepError("Reuse: Dialog kosong, tidak ada video untuk dipilih")
+          logger.error(f"Video Sebelumnya '{target}' Tidak Ditemukan di Dialog Reuse")
+          available = []
+          for i in range(min(3, s.page.locator(SEL_REUSE_OPTION).count())):
+              try:
+                  available.append(s.page.locator(SEL_REUSE_OPTION).nth(i).inner_text(timeout=1000).strip()[:60])
+              except:
+                  pass
+          if available:
+              logger.info(f"Video yang tersedia: {', '.join(available)}")
+          raise StepError(f"Reuse: Video '{target}' tidak ada")
       
       picked.wait_for(state="visible", timeout=8000)
       txt = (picked_txt or "").strip()[:80]
