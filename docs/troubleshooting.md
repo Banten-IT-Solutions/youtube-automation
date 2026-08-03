@@ -188,6 +188,59 @@ StepError: gagal klik ...
 
 ## Configuration Issues
 
+### ❌ "Jam jadwal salah - seharusnya 20:00 tapi jadi 03:00 AM"
+
+```
+Jadwal yang di-set: 20:00
+Jadwal di YouTube Studio: 03:00 (keesokan hari)
+```
+
+**Penyebab:** Timezone browser tidak sesuai dengan timezone channel YouTube.
+
+**Solusi:**
+1. Tentukan timezone channel YouTube Anda (misal: Asia/Jakarta, Asia/Bangkok)
+2. Update `config.json`:
+```json
+{
+  "timezone": "Asia/Jakarta"
+}
+```
+3. Jika menggunakan Docker, update `docker-compose.yml`:
+```yaml
+environment:
+  - TZ=Asia/Jakarta
+```
+4. Jalankan ulang: `bash run.sh run --limit 1`
+
+**IANA Timezone Examples:**
+- Indonesia (WIB): `Asia/Jakarta`
+- Thailand: `Asia/Bangkok`
+- Filipina: `Asia/Manila`
+- USA Eastern: `America/New_York`
+- USA Pacific: `America/Los_Angeles`
+
+[Daftar lengkap IANA timezones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
+
+### ❌ "Video sebelumnya tidak ditemukan di dialog reuse"
+
+```
+❌ Video Sebelumnya '100 PENGAJIAN KITAB SIRRUL ASROR - ABUYA UCI CILONGOK' 
+   Tidak Ditemukan di Dialog Reuse
+```
+
+**Penyebab:** Video sebelumnya tidak muncul di list awal dialog reuse. Mungkin:
+- Video sudah lama dan tersembunyi di halaman awal
+- Dialog reuse hanya menampilkan recent videos
+
+**Solusi:**
+1. Dialog reuse memiliki search box — automation akan mencari otomatis via search
+2. Pastikan video sebelumnya sudah **dijadwalkan** di YouTube Studio
+3. Jika search masih gagal:
+   - Buka YouTube Studio manual
+   - Klik "Gunakan kembali detail"
+   - Cari video di search box manual
+   - Verifikasi video ada dan visible
+
 ### ❌ "studio_url tidak valid"
 
 ```
@@ -352,6 +405,8 @@ tar -czf debug_report.tar.gz debug_report/
 | Login gagal | `rm -rf profile && bash run.sh login` |
 | Thumbnail tidak ketemu | Pastikan nama file diawali nomor episode |
 | Video prev tidak ada | Jadwalkan video prev terlebih dahulu |
+| Jam jadwal salah (03:00 bukan 20:00) | Set `"timezone"` di config sesuai channel timezone |
+| Video sebelumnya tidak ketemu di reuse | Dialog reuse punya search — automation akan cari otomatis |
 | Selector error | Buka Playwright Inspector & update selector |
 | Terlalu lambat | Kurangi `wait_after_action_ms` |
 | Terlalu cepat | Naikkan `wait_after_action_ms` |

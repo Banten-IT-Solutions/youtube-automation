@@ -77,7 +77,7 @@ docker-compose run --rm youtube-automation python yt_auto.py run
 ```yaml
 environment:
   - PYTHONUNBUFFERED=1
-  - TZ=Asia/Jakarta          # Timezone (opsional)
+  - TZ=Asia/Jakarta          # Timezone container (sesuaikan dengan timezone channel YouTube)
 
 volumes:
   - ./profile:/app/profile
@@ -85,6 +85,8 @@ volumes:
   - ./logs:/app/logs
   - ./config.json:/app/config.json:ro
 ```
+
+> **Penting:** `TZ` environment variable harus sesuai dengan timezone channel YouTube Anda. Browser juga dikonfigurasi timezone via `timezone` di `config.json` untuk pastikan dropdown jadwal menampilkan waktu yang benar.
 
 **Perbandingan Docker vs Native:**
 
@@ -138,6 +140,7 @@ Edit `config.json` jika perlu:
 ```json
 {
   "studio_url": "https://studio.youtube.com/channel/...",
+  "timezone": "Asia/Jakarta",
   "schedule_time": "20:00",
   "schedule_offset_days": 7,
   "schedule_visibility_type": "PUBLISH_FROM_SPONSORS_ONLY",
@@ -145,6 +148,12 @@ Edit `config.json` jika perlu:
   "screenshots": false
 }
 ```
+
+**Penting tentang timezone:**
+- `timezone` di config mengatur timezone browser (dropdown jadwal)
+- Gunakan IANA timezone identifier (misal: `Asia/Jakarta`, `Asia/Bangkok`, `America/New_York`)
+- Harus sesuai dengan timezone channel YouTube agar jadwal benar
+- Jika salah, jam jadwal bisa bergeser (misal: jadwal 20:00 jadi 03:00 keesokan hari)
 
 > Daftar lengkap konfigurasi ada di `README.md`.
 

@@ -88,8 +88,9 @@ Edit `config.json`:
 | `studio_url` | URL daftar draft (filter DRAFT, sort ASCENDING) |
 | `thumbnail_dir` | Folder berisi file thumbnail |
 | `playlists` / `playlist_keywords` | Nama playlist & kata kunci untuk kartu |
+| `timezone` | Timezone browser (default: `Asia/Jakarta`). Gunakan IANA timezone identifier |
 | `schedule_offset_days` | Selisih hari jadwal dari video sebelumnya (default: 7) |
-| `schedule_time` | Jam jadwal (default: `20:00`) |
+| `schedule_time` | Jam jadwal (default: `20:00`) — dalam timezone yang dikonfigurasi |
 | `schedule_visibility_type` | `PUBLISH_FROM_SPONSORS_ONLY` atau `PUBLIC` |
 | `date_format` | Format tanggal di form (`%d/%m/%Y`) |
 | `pause_between_drafts` | `true` = pause minta Enter tiap draft |
