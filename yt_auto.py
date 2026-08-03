@@ -168,15 +168,24 @@ def replace_number(text, old, new):
     return re.sub(r"(?<!\d){}(?!\d)".format(old), str(new), text or "")
 
 
-def find_thumbnail(cfg, num):
-    d = cfg["thumbnail_dir"]
-    if not os.path.isdir(d):
-        return None
-    for pat in ["{}[ _-]*.*".format(num), "{}*.*".format(num)]:
-        hits = sorted(glob.glob(os.path.join(d, pat)))
-        if hits:
-            return hits[0]
-    return None
+def find_thumbnail(cfg, num, fname=None):
+     d = cfg["thumbnail_dir"]
+     if not os.path.isdir(d):
+         return None
+     # Jika fname tersedia, cari thumbnail yang match dengan series name (lebih spesifik)
+     if fname:
+         fname_base = (fname or "").replace(".mp4", "").strip()
+         # Cari file yang berisi series name + number, atau filename exact
+         for pat in [fname_base + "*", "{}[ _-]*".format(num) + "*"]:
+             hits = sorted(glob.glob(os.path.join(d, pat)))
+             if hits:
+                 return hits[0]
+     # Fallback: cari berdasarkan number saja
+     for pat in ["{}[ _-]*.*".format(num), "{}*.*".format(num)]:
+         hits = sorted(glob.glob(os.path.join(d, pat)))
+         if hits:
+             return hits[0]
+     return None
 
 
 def find_playlist(cfg, title):
@@ -342,12 +351,13 @@ def reuse_details(s, prev_fname):
           
           if search_input:
               try:
-                  search_input.click()
-                  s.wait(500 / 1000.0)
-                  search_input.fill("")  # clear dulu
+                  # Click dengan force=True untuk bypass overlay
+                  search_input.click(force=True)
                   s.wait(300 / 1000.0)
-                  search_input.type(target, delay=50)  # type perlahan
-                  s.wait(1000 / 1000.0)
+                  search_input.fill("")  # clear dulu
+                  s.wait(200 / 1000.0)
+                  search_input.type(target, delay=30)  # type perlahan
+                  s.wait(500 / 1000.0)
                   logger.step(f"Search: {target[:50]}...", indent=3)
                   s.wait(3000 / 1000.0)  # tunggu lebih lama untuk hasil
                   
@@ -417,20 +427,20 @@ def _leading_number(text):
     return int(m.group(1)) if m else None
 
 
-def upload_thumbnail(s, num):
-     logger = get_logger()
-     fp = find_thumbnail(s.cfg, num)
-     if not fp:
-         logger.warning(f"Thumbnail {num} Tidak Ada")
-         return
-     logger.action("Upload Thumbnail", os.path.basename(fp))
-     try:
-         s.page.locator(SEL_THUMB_INPUT).first.set_input_files(fp, timeout=5000)
-         s.wait(1500 / 1000.0)
-         logger.result("Thumbnail Berhasil Diupload", success=True)
-     except Exception as e:
-         logger.warning(f"Gagal Upload {e}")
-     s.shot("03-thumbnail")
+def upload_thumbnail(s, num, fname=None):
+      logger = get_logger()
+      fp = find_thumbnail(s.cfg, num, fname)
+      if not fp:
+          logger.warning(f"Thumbnail {num} Tidak Ada")
+          return
+      logger.action("Upload Thumbnail", os.path.basename(fp))
+      try:
+          s.page.locator(SEL_THUMB_INPUT).first.set_input_files(fp, timeout=5000)
+          s.wait(1500 / 1000.0)
+          logger.result("Thumbnail Berhasil Diupload", success=True)
+      except Exception as e:
+          logger.warning(f"Gagal Upload {e}")
+      s.shot("03-thumbnail")
 
 
 def set_recording_date(s):
@@ -921,28 +931,28 @@ def set_schedule_time(s, time_str):
 
 
 def process_draft(s, num, prev_fname, sch, cfg):
-     logger = get_logger()
-     prev_num = num - 1
-     sch_str = sch.strftime(cfg["date_format"])
-     playlist = find_playlist(cfg, prev_fname or "")
-     thumbnail = find_thumbnail(cfg, num)
+      logger = get_logger()
+      prev_num = num - 1
+      sch_str = sch.strftime(cfg["date_format"])
+      playlist = find_playlist(cfg, prev_fname or "")
+      thumbnail = find_thumbnail(cfg, num, prev_fname)
 
-     logger.start_draft(num)
-     logger.separator()
-     logger.action("Konfigurasi Draft", f"Video {prev_num}, Playlist : {playlist or '-'}")
-     logger.step(f"Jadwal : {sch_str} {cfg['schedule_time']}", indent=2)
-     logger.step(f"Thumbnail : {thumbnail or '(tidak ditemukan)'}", indent=2)
-     logger.separator()
+      logger.start_draft(num)
+      logger.separator()
+      logger.action("Konfigurasi Draft", f"Video {prev_num}, Playlist : {playlist or '-'}")
+      logger.step(f"Jadwal : {sch_str} {cfg['schedule_time']}", indent=2)
+      logger.step(f"Thumbnail : {thumbnail or '(tidak ditemukan)'}", indent=2)
+      logger.separator()
 
-     reuse_details(s, prev_fname)
-     edit_title_desc(s, num, prev_num)
-     upload_thumbnail(s, num)
-     advanced_settings(s)
-     monetization(s)
-     video_elements(s, prev_num, playlist, cfg)
-     schedule(s, sch, cfg["schedule_time"])
+      reuse_details(s, prev_fname)
+      edit_title_desc(s, num, prev_num)
+      upload_thumbnail(s, num, prev_fname)
+      advanced_settings(s)
+      monetization(s)
+      video_elements(s, prev_num, playlist, cfg)
+      schedule(s, sch, cfg["schedule_time"])
 
-     logger.end_draft(num, success=True)
+      logger.end_draft(num, success=True)
 
 
 def main():
