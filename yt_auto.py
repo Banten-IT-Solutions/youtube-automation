@@ -370,7 +370,6 @@ def reuse_details(s, prev_fname):
                   s.wait(500 / 1000.0)
                   logger.step(f"Search: {target[:50]}...", indent=3)
                   s.wait(3000 / 1000.0)  # tunggu lebih lama untuk hasil
-                  s.shot("00-after-search")
                   
                   # Loop kartu lagi setelah search
                   cards = s.page.locator(SEL_REUSE_OPTION)
@@ -387,17 +386,16 @@ def reuse_details(s, prev_fname):
               except Exception as e:
                   logger.warning(f"Gagal search di dialog: {e}")
       
+      # Jika masih tidak ketemu: gunakan recent video (first card) sebagai fallback
       if picked is None:
-          logger.error(f"Video Sebelumnya '{target}' Tidak Ditemukan di Dialog Reuse")
-          available = []
-          for i in range(min(3, s.page.locator(SEL_REUSE_OPTION).count())):
-              try:
-                  available.append(s.page.locator(SEL_REUSE_OPTION).nth(i).inner_text(timeout=1000).strip()[:60])
-              except:
-                  pass
-          if available:
-              logger.info(f"Video yang tersedia: {', '.join(available)}")
-          raise StepError(f"Reuse: Video '{target}' tidak ada")
+          logger.warning(f"Video Sebelumnya '{target}' Tidak Ditemukan")
+          logger.step("Gunakan video terakhir yang tersedia sebagai fallback", indent=2)
+          if cards.count() > 0:
+              picked = cards.first
+              picked_txt = (picked.inner_text() or "").strip()[:80]
+          else:
+              logger.error("Tidak ada video apapun di dialog reuse")
+              raise StepError("Reuse: Dialog kosong, tidak ada video untuk dipilih")
       
       picked.wait_for(state="visible", timeout=8000)
       txt = (picked_txt or "").strip()[:80]
