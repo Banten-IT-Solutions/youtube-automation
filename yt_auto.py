@@ -342,9 +342,14 @@ def reuse_details(s, prev_fname):
           
           if search_input:
               try:
-                  search_input.fill(target)
-                  search_input.press("Enter")
-                  s.wait(2000 / 1000.0)  # tunggu hasil search muncul
+                  search_input.click()
+                  s.wait(500 / 1000.0)
+                  search_input.fill("")  # clear dulu
+                  s.wait(300 / 1000.0)
+                  search_input.type(target, delay=50)  # type perlahan
+                  s.wait(1000 / 1000.0)
+                  logger.step(f"Search: {target[:50]}...", indent=3)
+                  s.wait(3000 / 1000.0)  # tunggu lebih lama untuk hasil
                   
                   # Loop kartu lagi setelah search
                   cards = s.page.locator(SEL_REUSE_OPTION)
