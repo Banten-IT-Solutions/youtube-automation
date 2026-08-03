@@ -304,40 +304,57 @@ def open_editor(s, row):
 
 
 def reuse_details(s, prev_fname):
-     logger = get_logger()
-     logger.action("Gunakan Detail Video Lama", "dari Video Sebelumnya")
-     s.click_first(SEL_REUSE_BTN, "Salin detail video")
-     target = (prev_fname or "").replace(".mp4", "").strip()
-     cards = s.page.locator(SEL_REUSE_OPTION)
-     picked = None
-     for i in range(cards.count()):
-         try:
-             t = cards.nth(i).inner_text(timeout=1500).strip()
-         except PWTimeout:
-             continue
-         if t and t == target:
-             picked = cards.nth(i)
-             break
-     if picked is None:
-         logger.warning("Video Lama Tidak Ada")
-         picked = cards.first
-     picked.wait_for(state="visible", timeout=8000)
-     txt = (picked.inner_text() or "").strip()[:80]
-     picked.click()
-     logger.result(f"Video {txt}", success=True)
-     s.wait(3000 / 1000.0)
-     btn = s.page.locator(
-         "ytcp-uploads-reuse-details-selection-dialog button[aria-label='Gunakan kembali']"
-     ).first
-     btn.wait_for(state="visible", timeout=15000)
-     for _ in range(60):
-         if btn.get_attribute("aria-disabled") != "true":
-             break
-         s.wait(0.5)
-     btn.click(force=True)
-     logger.result("Detail Disalin", success=True)
-     s.shot("01-after-reuse")
-     s.wait(2000 / 1000.0)
+      logger = get_logger()
+      logger.action("Gunakan Detail Video Lama", "dari Video Sebelumnya")
+      s.click_first(SEL_REUSE_BTN, "Salin detail video")
+      target = (prev_fname or "").replace(".mp4", "").strip()
+      target_normalized = re.sub(r'\s+', ' ', target.lower())
+      
+      cards = s.page.locator(SEL_REUSE_OPTION)
+      picked = None
+      picked_txt = None
+      
+      for i in range(cards.count()):
+          try:
+              t = cards.nth(i).inner_text(timeout=1500).strip()
+              t_normalized = re.sub(r'\s+', ' ', t.lower())
+              # Match exact atau substring (case-insensitive)
+              if t_normalized == target_normalized or target_normalized in t_normalized:
+                  picked = cards.nth(i)
+                  picked_txt = t
+                  break
+          except PWTimeout:
+              continue
+      
+      if picked is None:
+          logger.error(f"Video Sebelumnya '{target}' Tidak Ditemukan di Dialog Reuse")
+          available = []
+          for i in range(min(3, cards.count())):
+              try:
+                  available.append(cards.nth(i).inner_text(timeout=1000).strip()[:60])
+              except:
+                  pass
+          if available:
+              logger.info(f"Video yang tersedia: {', '.join(available)}")
+          raise StepError(f"Reuse: Video '{target}' tidak ada")
+      
+      picked.wait_for(state="visible", timeout=8000)
+      txt = (picked_txt or "").strip()[:80]
+      picked.click()
+      logger.result(f"Video {txt}", success=True)
+      s.wait(3000 / 1000.0)
+      btn = s.page.locator(
+          "ytcp-uploads-reuse-details-selection-dialog button[aria-label='Gunakan kembali']"
+      ).first
+      btn.wait_for(state="visible", timeout=15000)
+      for _ in range(60):
+          if btn.get_attribute("aria-disabled") != "true":
+              break
+          s.wait(0.5)
+      btn.click(force=True)
+      logger.result("Detail Disalin", success=True)
+      s.shot("01-after-reuse")
+      s.wait(2000 / 1000.0)
 
 
 def edit_title_desc(s, num, prev_num):
