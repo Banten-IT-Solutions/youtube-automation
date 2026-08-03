@@ -600,7 +600,25 @@ def video_elements(s, prev_num, playlist, cfg):
          s.wait(2500 / 1000.0)
      except PWTimeout:
          logger.info("End Screen Tersedia")
+     
      logger.action("Kartu", f"Playlist : {playlist or '(tidak cocok)'}")
+     
+     # CHECK EXISTING CARD SEBELUM BUKA DIALOG
+     # Cek apakah ada card button yang menunjukkan existing card
+     card_btn = s.page.locator(SEL_CARDS_BUTTON).first
+     try:
+         card_btn.wait_for(state="visible", timeout=5000)
+         # Cek indicator existing card sebelum dialog buka
+         # Jika ada aria-label "Hapus kartu" atau similar, berarti sudah ada card
+         has_card = s.page.locator("[aria-label*='Hapus']").count() > 0
+         if has_card:
+             logger.info("Kartu Sudah Ada (detected sebelum dialog)")
+             s.shot("05-video-elements")
+             return
+     except:
+         pass
+     
+     # Jika belum ada card, buka dialog
      try:
          cb = s.page.locator(SEL_CARDS_BUTTON).first
          cb.wait_for(state="visible", timeout=8000)
@@ -617,11 +635,9 @@ def video_elements(s, prev_num, playlist, cfg):
              pass
 
      s.wait(2000 / 1000.0)
-     # Check apakah sudah ada kartu existing
-     # Cek beberapa selector untuk deteksi existing card
+     # Double-check inside dialog jika card sudah ada
      existing_card_indicators = [
          s.page.locator("ytcp-video-card-list-item"),
-         s.page.locator("[aria-label*='Hapus']").filter(has_text="Hapus"),  # "Hapus kartu" button
          s.page.locator("ytcp-video-card"),
      ]
      
@@ -630,7 +646,7 @@ def video_elements(s, prev_num, playlist, cfg):
          try:
              if indicator.count() > 0:
                  has_existing_card = True
-                 logger.info(f"Kartu Sudah Ada (detected via selector)")
+                 logger.info(f"Kartu Sudah Ada (detected inside dialog)")
                  break
          except:
              continue
