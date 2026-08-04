@@ -14,7 +14,7 @@ from pathlib import Path
 from core.logger import get_logger, init_logger
 from core.selectors import SEL_ROW
 
-from core.config import BASE, load_config, validate_config
+from core.config import BASE, apply_env_overrides, load_config, validate_config
 from core.helpers import find_prev_schedule_date, read_file_info, replace_number
 from core.runner import process_draft
 from core.steps.reuse import open_editor
@@ -100,6 +100,7 @@ def main() -> None:
      args = ap.parse_args()
 
      cfg = load_config()
+     cfg = apply_env_overrides(cfg)
      validate_config(cfg)
 
      log_file = os.path.join(cfg.get("logs_dir", "logs"), "yt_auto.log")

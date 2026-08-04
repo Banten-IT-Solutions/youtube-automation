@@ -51,8 +51,14 @@ COPY . /app/
 RUN pip install --no-cache-dir -r requirements.txt && \
     python -m playwright install chrome
 
+# Font Fira Sans untuk generator thumbnail (core/thumbgen.py)
+RUN mkdir -p /usr/share/fonts/truetype/fira-sans \
+    && wget -q -O /usr/share/fonts/truetype/fira-sans/FiraSans-BlackItalic.ttf \
+        https://raw.githubusercontent.com/google/fonts/main/ofl/firasans/FiraSans-BlackItalic.ttf \
+    && fc-cache -f
+
 # Create necessary directories
-RUN mkdir -p logs/shots profile thumbnails
+RUN mkdir -p logs/screenshots profile thumbnails templates
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1

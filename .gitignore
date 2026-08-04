@@ -43,3 +43,7 @@ config.local.json
 .env.local
 secrets.json
 
+# Dev tooling (rekaman codegen bisa berisi URL/sesi - jangan commit)
+capture/
+capture/*.py
+

@@ -29,6 +29,8 @@ class LogLevel(Enum):
 
 
 class Logger:
+    MAX_LOG_BYTES = 5 * 1024 * 1024
+    BACKUP_COUNT = 5
 
     def __init__(self, name="YT-AUTO", log_file=None, verbose=False):
         self.name = name
@@ -44,7 +46,23 @@ class Logger:
 
         if self.log_file:
             os.makedirs(os.path.dirname(self.log_file) or ".", exist_ok=True)
+            self._rotate()
             self._file = open(self.log_file, "a", encoding="utf-8")
+
+    def _rotate(self):
+        if not self.log_file or not os.path.exists(self.log_file):
+            return
+        try:
+            if os.path.getsize(self.log_file) < self.MAX_LOG_BYTES:
+                return
+        except OSError:
+            return
+        for i in range(self.BACKUP_COUNT - 1, 0, -1):
+            src = f"{self.log_file}.{i}"
+            dst = f"{self.log_file}.{i + 1}"
+            if os.path.exists(src):
+                os.replace(src, dst)
+        os.replace(self.log_file, f"{self.log_file}.1")
 
     def _get_timestamp(self):
         return datetime.now().strftime("%H:%M:%S")
