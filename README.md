@@ -8,6 +8,7 @@ Tool otomasi Python untuk memproses draft video YouTube Studio secara berurutan 
 - **Salin detail video lama** (reuse judul, deskripsi, setting)
 - **Ubah judul & deskripsi** dengan nomor episode auto-increment
 - **Unggah gambar sampul** otomatis dari folder `thumbnails/`
+- **Generator thumbnail** bawaan: `main.py thumbnail <template> <awal> <akhir>` langsung ke `thumbnails/`
 - Pengaturan lanjutan + **monetisasi & rating**
 - **Atur elemen video**: end screen (dari video terbaru) + kartu playlist
 - **Tentukan jadwal publikasi** (tanggal = video sebelumnya + `schedule_offset_days`)
@@ -44,6 +45,25 @@ make run LIMIT=10   # jalankan 10 draft
 make status         # cek status setup
 make help           # tampilkan semua perintah
 ```
+
+### Generate Thumbnail
+
+Generator thumbnail sudah tergabung. Output langsung ke folder `thumbnails/` (dibaca otomatis saat upload sampul):
+
+```bash
+make thumbnail-list                    # daftar template
+make thumbnail TEMPLATE=ibanatul-ahkam START=1 END=10
+make thumbnail TEMPLATE=tafsir-jalalain START=25 END=30 OVERWRITE=1
+
+# atau lewat main.py
+python main.py thumbnail ibanatul-ahkam 1 10
+python main.py thumbnail tafsir-jalalain 25 30 --overwrite
+python main.py thumbnail --tui    # mode interaktif
+python main.py thumbnail --list
+python main.py thumbnail --self-check
+```
+
+Template yang tersedia: `ibanatul-ahkam`, `minhajut-tholibin`, `risalatul-maymuniyah`, `sirrul-asror`, `tafsir-jalalain`. File PNG template berada di `templates/`; font Fira Sans diunduh otomatis saat `setup.sh`.
 
 ### Metode 2 — Docker
 
@@ -87,7 +107,7 @@ Edit `config.json`:
 |-------|-----------|
 | `studio_url` | URL daftar draft (filter DRAFT, sort ASCENDING) |
 | `thumbnail_dir` | Folder berisi file thumbnail |
-| `playlists` / `playlist_keywords` | Nama playlist & kata kunci untuk kartu |
+| `playlist_keywords` | Map playlist → kata kunci untuk kartu |
 | `timezone` | Timezone browser (default: `Asia/Jakarta`). Gunakan IANA timezone identifier |
 | `schedule_offset_days` | Selisih hari jadwal dari video sebelumnya (default: 7) |
 | `schedule_time` | Jam jadwal (default: `20:00`) — dalam timezone yang dikonfigurasi |
@@ -116,10 +136,12 @@ youtube-automation/
 │       ├── details.py  # Judul/deskripsi + thumbnail + pengaturan lanjutan
 │       ├── monetization.py # Monetisasi & rating iklan
 │       └── elements.py # End screen + kartu playlist
+│   └── thumbgen.py # Generator thumbnail bernomor
+├── templates/ # Template PNG sumber generator
 ├── config.json         # Konfigurasi
 ├── docs/               # Dokumentasi lengkap
 ├── profile/            # Sesi login (JANGAN di-commit!)
-├── thumbnails/         # File gambar sampul
+├── thumbnails/         # File gambar sampul (dibuat otomatis)
 ├── logs/               # Log & screenshots otomatis
 ├── setup.sh / run.sh / Makefile   # Alat bantu lokal
 ├── Dockerfile / docker-compose.yml # Alat bantu Docker

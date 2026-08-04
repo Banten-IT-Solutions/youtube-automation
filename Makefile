@@ -1,4 +1,4 @@
-.PHONY: help setup login run test status capture clean install-chromium
+.PHONY: help setup login run test status capture clean install-chromium thumbnail thumbnail-list thumbnail-tui
 
 VENV := .venv
 PYTHON := $(VENV)/bin/python
@@ -17,6 +17,10 @@ help:
 	@echo "  make run                - Jalankan semua draft"
 	@echo ""
 	@echo "Utilities:"
+	@echo "  make thumbnail TEMPLATE=ibanatul-ahkam START=1 END=10"
+	@echo "                          - Buat thumbnail ke thumbnails/ (bisa --overwrite, --outdir)"
+	@echo "  make thumbnail-list    - Daftar template thumbnail"
+	@echo "  make thumbnail-tui     - Buat thumbnail interaktif di terminal"
 	@echo "  make status             - Cek status setup"
 	@echo "  make capture            - Rekam selector via Playwright codegen"
 	@echo "  make install-chromium   - Install/reinstall Chromium"
@@ -64,6 +68,25 @@ run: venv
 
 capture:
 	@bash capture.sh
+
+thumbnail: venv
+	@if [ -z "$(TEMPLATE)" ] || [ -z "$(START)" ] || [ -z "$(END)" ]; then \
+		echo "Gunakan: make thumbnail TEMPLATE=<key> START=<awal> END=<akhir> [OVERWRITE=1] [OUTDIR=...]"; \
+		echo "Daftar template: make thumbnail-list"; \
+		exit 1; \
+	fi
+	@EXTRA=""; \
+	if [ "$(OVERWRITE)" = "1" ]; then EXTRA="--overwrite"; fi; \
+	if [ -n "$(OUTDIR)" ]; then EXTRA="$$EXTRA --outdir $(OUTDIR)"; fi; \
+	echo "🖼️  Membuat thumbnail $(TEMPLATE) $(START)-$(END)..."; \
+	$(PYTHON) main.py thumbnail $(TEMPLATE) $(START) $(END) $$EXTRA
+
+thumbnail-list: venv
+	@$(PYTHON) main.py thumbnail --list
+
+thumbnail-tui: venv
+	@echo "🖼️  Mode interaktif thumbnail (pilih template, awal, akhir)..."
+	@$(PYTHON) main.py thumbnail --tui
 
 status:
 	@bash run.sh status

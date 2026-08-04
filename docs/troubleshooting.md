@@ -271,8 +271,7 @@ goto() error: net::ERR_INVALID_URL
   }
 }
 ```
-2. Atau tambahkan ke array `playlists`
-3. Test dengan 1 draft: `bash run.sh test`
+2. Test dengan 1 draft: `bash run.sh test`
 
 ### ❌ "Schedule date tidak valid"
 

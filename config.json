@@ -4,14 +4,8 @@
   "thumbnail_dir": "thumbnails",
   "logs_dir": "logs",
 
-  "playlists": [
-    "Risalatul Maymuniyah"
-  ],
   "playlist_keywords": {
-    "Risalatul Maymuniyah": [
-      "risalatul maymuniyah",
-      "maymuniyah"
-    ],
+    "Risalatul Maymuniyah": ["risalatul maymuniyah", "maymuniyah"],
     "Minhajut Tholibin": ["minhajut tholibin", "minhajuttholibin"],
     "Ibanatul Ahkam": ["ibanatul ahkam", "ibanatulahkam"],
     "Tadzkirotul Qurtubi": ["tadzkirotul qurtubi", "tadzkirotulqurtubi"],

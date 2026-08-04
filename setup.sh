@@ -26,6 +26,20 @@ echo "[2/4] Upgrade pip..."
 echo "[3/4] Install dependencies..."
 "$VENV/bin/python" -m pip install -q -r "$BASE/requirements.txt"
 
+# 3b. Download font Fira Sans (dibutuhkan generator thumbnail)
+FONT_DIR="/usr/share/fonts/truetype/fira-sans"
+if [ ! -f "$FONT_DIR/FiraSans-BlackItalic.ttf" ]; then
+    if command -v curl >/dev/null 2>&1; then
+        echo "    Downloading font Fira Sans Black Italic..."
+        mkdir -p "$FONT_DIR"
+        curl -L --fail -o "$FONT_DIR/FiraSans-BlackItalic.ttf" \
+            https://raw.githubusercontent.com/google/fonts/main/ofl/firasans/FiraSans-BlackItalic.ttf
+        command -v fc-cache >/dev/null 2>&1 && fc-cache -f >/dev/null 2>&1 || true
+    else
+        echo "    [SKIP] curl tidak tersedia, font tidak diunduh"
+    fi
+fi
+
 # 4. Install Chromium (hanya jika Google Chrome tidak ada — app memakai channel=chrome)
 echo "[4/4] Cek browser..."
 if command -v google-chrome >/dev/null 2>&1 || command -v google-chrome-stable >/dev/null 2>&1; then

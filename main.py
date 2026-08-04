@@ -9,7 +9,9 @@ import sys
 
 from playwright.sync_api import sync_playwright
 
-from core.logger import init_logger
+from pathlib import Path
+
+from core.logger import get_logger, init_logger
 from core.selectors import SEL_ROW
 
 from core.config import BASE, load_config, validate_config
@@ -21,13 +23,80 @@ from core.studio import StepError, Studio
 _logger = None
 
 
+def _tg_module():
+    from core import thumbgen  # lazy: hanya untuk subcommand thumbnail
+    return thumbgen
+
+
+def build_parser() -> argparse.ArgumentParser:
+     tg = _tg_module()
+     ap = argparse.ArgumentParser(description="Automasi draft & generator thumbnail YouTube Studio")
+     sub = ap.add_subparsers(dest="command", metavar="COMMAND", required=True)
+
+     run_p = sub.add_parser("run", help="Jalankan automasi draft")
+     run_p.add_argument("--limit", type=int, default=None, help="maks draft diproses")
+     run_p.add_argument("--verbose", action="store_true", help="enable verbose logging")
+
+     login_p = sub.add_parser("login", help="Login ke YouTube Studio (sekali saja)")
+     login_p.add_argument("--limit", type=int, default=None,
+                          help="Diabaikan untuk mode login (maks draft diproses)")
+     login_p.add_argument("--verbose", action="store_true", help="enable verbose logging")
+
+     th = sub.add_parser("thumbnail", help="Buat thumbnail bernomor dari template")
+     th.add_argument("template", nargs="?", choices=sorted(tg.TEMPLATES),
+                     help="Key template, lihat --list")
+     th.add_argument("start", nargs="?", type=int, help="Nomor awal, 0..999")
+     th.add_argument("end", nargs="?", type=int, help="Nomor akhir, 0..999")
+     th.add_argument("--overwrite", action="store_true", help="Timpa file yang sudah ada")
+     th.add_argument("--outdir", default=None,
+                     help="Folder output (default: thumbnail_dir dari config)")
+     th.add_argument("--list", action="store_true", help="Tampilkan daftar template")
+     th.add_argument("--self-check", action="store_true", help="Cek konfigurasi dan render digit")
+     th.add_argument("--tui", action="store_true", help="Mode interaktif di terminal")
+     th.add_argument("--verbose", action="store_true", help="enable verbose logging")
+
+     return ap
+
+
+def cmd_thumbnail(args, cfg: dict) -> None:
+     tg = _tg_module()
+     logger = get_logger()
+     try:
+         if args.list:
+             for key in sorted(tg.TEMPLATES):
+                 print(f"{tg.TEMPLATES[key]['label']} ({key})")
+             return
+
+         if args.self_check:
+             tg.self_check()
+             return
+
+         outdir = Path(args.outdir) if args.outdir else None
+         if not outdir:
+             outdir = Path(BASE) / cfg.get("thumbnail_dir", "thumbnails")
+         elif not outdir.is_absolute():
+             outdir = Path(BASE) / outdir
+
+         if args.tui:
+             tg.run_tui(outdir=outdir)
+             return
+
+         if args.template is None or args.start is None or args.end is None:
+             raise SystemExit("thumbnail: template, awal, dan akhir wajib diisi "
+                              "(lihat --list, atau gunakan --tui)")
+
+         tg.generate(args.template, args.start, args.end, args.overwrite, outdir=outdir)
+     except (ValueError, FileNotFoundError, OSError) as e:
+         logger.error(str(e))
+         raise SystemExit(1)
+     except (EOFError, KeyboardInterrupt):
+         logger.warning("Dibatalkan.")
+         raise SystemExit(1)
+
+
 def main() -> None:
      global _logger
-     ap = argparse.ArgumentParser(description="Automasi draft YouTube Studio")
-     ap.add_argument("mode", nargs="?", default="run",
-                     choices=["run", "login"])
-     ap.add_argument("--limit", type=int, default=None, help="maks draft diproses")
-     ap.add_argument("--verbose", action="store_true", help="enable verbose logging")
+     ap = build_parser()
      args = ap.parse_args()
 
      cfg = load_config()
@@ -36,8 +105,15 @@ def main() -> None:
      log_file = os.path.join(cfg.get("logs_dir", "logs"), "yt_auto.log")
      _logger = init_logger(name="YT-AUTO", log_file=log_file, verbose=args.verbose)
 
+     if args.command == "thumbnail":
+         try:
+             cmd_thumbnail(args, cfg)
+         finally:
+             _logger.close()
+         return
+
      _logger.section("BITS YouTube Automation")
-     _logger.info(f"Mode : {args.mode}")
+     _logger.info(f"Mode : {args.command}")
      if args.limit:
          _logger.info(f"Batas Draft {args.limit}")
 
@@ -63,7 +139,7 @@ def main() -> None:
 
      s = None
      try:
-         if args.mode == "login":
+         if args.command == "login":
              _logger.action("Login Mode", "Tunggu Konfirmasi Manual")
              page.goto("https://studio.youtube.com/")
              input("  [Tekan Enter setelah login selesai]")

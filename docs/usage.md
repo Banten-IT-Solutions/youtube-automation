@@ -26,7 +26,17 @@ Browser terbuka ke studio.youtube.com. Login, lalu tekan **Enter** di terminal. 
 
 ### 1.3 Siapkan Thumbnail
 
-Letakkan file JPG di `thumbnails/` dengan nama diawali nomor episode:
+Ada 2 cara:
+
+**Cara A — Generator bawaan** (output langsung ke `thumbnails/`):
+
+```bash
+python main.py thumbnail risalatul-maymuniyah 135 137
+python main.py thumbnail --list          # daftar template yang tersedia
+python main.py thumbnail --tui           # mode interaktif
+```
+
+**Cara B — taruh file JPG manual** di `thumbnails/` dengan nama diawali nomor episode:
 
 ```text
 thumbnails/
@@ -82,6 +92,8 @@ Output:
 | `bash run.sh run N` | Jalankan N draft |
 | `bash run.sh run` | Jalankan semua draft |
 | `bash run.sh status` | Cek status setup |
+| `make thumbnail TEMPLATE=... START=1 END=10` | Buat thumbnail ke `thumbnails/` (Makefile) |
+| `main.py thumbnail <template> <start> <end>` | Buat thumbnail via subcommand |
 | `make setup` | Setup (Makefile) |
 | `make test` | Test 1 draft (Makefile) |
 | `make run LIMIT=5` | Jalankan 5 draft (Makefile) |

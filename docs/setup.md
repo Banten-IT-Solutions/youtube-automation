@@ -124,7 +124,24 @@ Browser akan terbuka ke studio.youtube.com. Login dengan akun YouTube Anda, lalu
 
 ### 3.2 Siapkan Thumbnail
 
-Letakkan file JPG di folder `thumbnails/`. **Nama file WAJIB diawali nomor episode:**
+Ada 2 cara:
+
+**Cara A — Generator bawaan (recommended).** Buat thumbnail langsung ke `thumbnails/`:
+
+```bash
+# Daftar template
+python main.py thumbnail --list
+
+# Generate nomor episode 135–137 untuk template tertentu
+python main.py thumbnail risalatul-maymuniyah 135 137
+
+# Mode interaktif (pilih template, awal, akhir)
+python main.py thumbnail --tui
+```
+
+Template yang tersedia: `ibanatul-ahkam`, `minhajut-tholibin`, `risalatul-maymuniyah`, `sirrul-asror`, `tafsir-jalalain`. Template PNG sumber berada di `templates/`, output otomatis masuk `thumbnails/`.
+
+**Cara B — Letakkan file JPG manual** di folder `thumbnails/`. **Nama file WAJIB diawali nomor episode:**
 
 ```text
 thumbnails/

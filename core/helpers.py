@@ -137,16 +137,11 @@ def find_thumbnail(cfg: dict, num: int, fname: str | None = None) -> str | None:
 
 def find_playlist(cfg: dict, title: str | None) -> str | None:
     t = (title or "").lower()
-    kmap = cfg.get("playlist_keywords")
-    if kmap:
-        for pl, keys in kmap.items():
-            for k in keys:
-                if k.lower() in t:
-                    return pl
-        return None
-    for pl in cfg.get("playlists", []):
-        if pl and pl.lower() in t:
-            return pl
+    kmap = cfg.get("playlist_keywords") or {}
+    for pl, keys in kmap.items():
+        for k in keys:
+            if k.lower() in t:
+                return pl
     return None
 
 
