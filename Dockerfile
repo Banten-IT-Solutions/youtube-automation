@@ -47,9 +47,8 @@ RUN apt-get update && apt-get install -y \
 # Copy aplikasi
 COPY . /app/
 
-# Install Python dependencies
+# Install Python dependencies (app memakai channel=chrome, bukan bundled chromium)
 RUN pip install --no-cache-dir -r requirements.txt && \
-    python -m playwright install chromium && \
     python -m playwright install chrome
 
 # Create necessary directories
@@ -59,4 +58,4 @@ RUN mkdir -p logs/shots profile thumbnails
 ENV PYTHONUNBUFFERED=1
 
 # Default command
-CMD ["python", "yt_auto.py", "run"]
+CMD ["python", "main.py", "run"]

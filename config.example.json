@@ -44,5 +44,6 @@
 
   "pause_between_drafts": false,
   "wait_after_action_ms": 700,
-  "screenshots": false
+  "screenshots": false,
+  "headless": true
 }

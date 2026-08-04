@@ -65,11 +65,11 @@ Terisolasi dan reproducible (cross-platform).
 docker-compose build
 
 # 2. Login (sekali saja, session tersimpan di profile/)
-docker-compose run --rm youtube-automation python yt_auto.py login
+docker-compose run --rm youtube-automation python main.py login
 
 # 3. Jalankan
-docker-compose run --rm youtube-automation python yt_auto.py run --limit 5
-docker-compose run --rm youtube-automation python yt_auto.py run
+docker-compose run --rm youtube-automation python main.py run --limit 5
+docker-compose run --rm youtube-automation python main.py run
 ```
 
 **Konfigurasi Docker** (`docker-compose.yml`):
@@ -106,8 +106,8 @@ source .venv/bin/activate          # Linux/macOS; Windows: .venv\Scripts\activat
 pip install -r requirements.txt
 python -m playwright install chromium && python -m playwright install chrome
 
-python yt_auto.py login            # Login
-python yt_auto.py run --limit 5    # Jalankan 5 draft
+python main.py login            # Login
+python main.py run --limit 5    # Jalankan 5 draft
 ```
 
 ---
@@ -145,7 +145,8 @@ Edit `config.json` jika perlu:
   "schedule_offset_days": 7,
   "schedule_visibility_type": "PUBLISH_FROM_SPONSORS_ONLY",
   "pause_between_drafts": false,
-  "screenshots": false
+  "screenshots": false,
+  "headless": true
 }
 ```
 
@@ -160,7 +161,7 @@ Edit `config.json` jika perlu:
 ### 3.4 Test dengan 1 Draft
 
 ```bash
-bash run.sh test       # atau: make test / python yt_auto.py run --limit 1
+bash run.sh test       # atau: make test / python main.py run --limit 1
 ```
 
 **Selalu test 1 draft dulu** sebelum menjalankan semua.
@@ -181,7 +182,7 @@ bash run.sh run        # Jalankan semua
 ```bash
 nohup bash run.sh run > automation.log 2>&1 &
 tail -f automation.log        # Monitor
-pkill -f "python yt_auto.py"  # Stop
+pkill -f "python main.py"  # Stop
 ```
 
 Dengan Docker:
@@ -222,7 +223,7 @@ bash run.sh status                  # Cek status setup
 
 ```bash
 bash run.sh test                    # Test 1 draft
-.venv/bin/python yt_auto.py run --limit 1   # Direct Python
+.venv/bin/python main.py run --limit 1   # Direct Python
 ```
 
 ---

@@ -4,7 +4,7 @@ Tool otomasi Python untuk memproses draft video YouTube Studio secara berurutan 
 
 ## ✨ Fitur
 
-- Satu script utama: `yt_auto.py`
+- Satu script utama: `main.py`
 - **Salin detail video lama** (reuse judul, deskripsi, setting)
 - **Ubah judul & deskripsi** dengan nomor episode auto-increment
 - **Unggah gambar sampul** otomatis dari folder `thumbnails/`
@@ -52,11 +52,11 @@ make help           # tampilkan semua perintah
 docker-compose build
 
 # 2. Login (sekali saja, session tersimpan di profile/)
-docker-compose run --rm youtube-automation python yt_auto.py login
+docker-compose run --rm youtube-automation python main.py login
 
 # 3. Jalankan
-docker-compose run --rm youtube-automation python yt_auto.py run --limit 5
-docker-compose run --rm youtube-automation python yt_auto.py run
+docker-compose run --rm youtube-automation python main.py run --limit 5
+docker-compose run --rm youtube-automation python main.py run
 ```
 
 > Volume Docker otomatis memakai folder lokal (`profile/`, `thumbnails/`, `logs/`, `config.json`) — jadi login sekali di Docker tetap berlaku di run berikutnya.
@@ -96,13 +96,26 @@ Edit `config.json`:
 | `pause_between_drafts` | `true` = pause minta Enter tiap draft |
 | `wait_after_action_ms` | Delay setelah tiap aksi (default: 700ms) |
 | `screenshots` | `true` = simpan screenshot per-step (debug). `FAIL` saat error selalu diambil |
+| `headless` | `true` = browser berjalan tanpa tampilan (default). `false` = browser muncul (untuk melihat proses / debugging) |
 
 ## 📁 Struktur Folder
 
 ```
 youtube-automation/
-├── yt_auto.py          # Script utama
-├── logger.py           # Modul logging user-friendly
+├── main.py            # Entry point (CLI + alur utama)
+├── core/              # Package inti
+│   ├── config.py       # Load & validasi config, konstanta
+│   ├── studio.py       # Abstraksi interaksi halaman (class Studio)
+│   ├── helpers.py      # Helper: tanggal, URL, thumbnail, playlist
+│   ├── schedule.py     # Step penjadwalan publikasi
+│   ├── logger.py       # Modul logging user-friendly
+│   ├── selectors.py # Daftar selector UI YouTube Studio
+│   ├── runner.py       # Orkestrasi proses satu draft
+│   └── steps/          # Step per fitur
+│       ├── reuse.py    # Buka editor + salin detail video lama
+│       ├── details.py  # Judul/deskripsi + thumbnail + pengaturan lanjutan
+│       ├── monetization.py # Monetisasi & rating iklan
+│       └── elements.py # End screen + kartu playlist
 ├── config.json         # Konfigurasi
 ├── docs/               # Dokumentasi lengkap
 ├── profile/            # Sesi login (JANGAN di-commit!)
@@ -115,7 +128,7 @@ youtube-automation/
 
 ## 🚨 Ada Masalah?
 
-Lihat [`docs/troubleshooting.md`](docs/troubleshooting.md) — berisi solusi untuk semua error umum (setup, login, runtime, config, performa, Docker). Screenshot `FAIL.png` di `logs/shots/` selalu tersedia saat error.
+Lihat [`docs/troubleshooting.md`](docs/troubleshooting.md) — berisi solusi untuk semua error umum (setup, login, runtime, config, performa, Docker). Screenshot `FAIL.png` di `logs/screenshots/` selalu tersedia saat error.
 
 ## 🔐 Keamanan
 

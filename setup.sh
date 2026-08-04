@@ -26,9 +26,14 @@ echo "[2/4] Upgrade pip..."
 echo "[3/4] Install dependencies..."
 "$VENV/bin/python" -m pip install -q -r "$BASE/requirements.txt"
 
-# 4. Install Chromium
-echo "[4/4] Install Chromium untuk Playwright..."
-"$VENV/bin/python" -m playwright install chromium
+# 4. Install Chromium (hanya jika Google Chrome tidak ada — app memakai channel=chrome)
+echo "[4/4] Cek browser..."
+if command -v google-chrome >/dev/null 2>&1 || command -v google-chrome-stable >/dev/null 2>&1; then
+    echo "    Google Chrome terdeteksi — lewati download Chromium"
+else
+    echo "    Install Chromium untuk Playwright..."
+    "$VENV/bin/python" -m playwright install chromium
+fi
 
 echo ""
 echo "=========================================="
@@ -38,11 +43,11 @@ echo ""
 echo "Langkah selanjutnya:"
 echo ""
 echo "1. LOGIN (sekali saja):"
-echo "   $VENV/bin/python yt_auto.py login"
+echo "   $VENV/bin/python main.py login"
 echo ""
 echo "2. JALANKAN AUTOMATION:"
-echo "   $VENV/bin/python yt_auto.py run"
+echo "   $VENV/bin/python main.py run"
 echo ""
 echo "3. ATAU dengan limit untuk testing:"
-echo "   $VENV/bin/python yt_auto.py run --limit 1"
+echo "   $VENV/bin/python main.py run --limit 1"
 echo ""

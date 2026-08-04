@@ -12,19 +12,19 @@ fi
 
 if [ "$1" == "login" ]; then
     echo "🔐 Login YouTube Studio..."
-    "$VENV/bin/python" "$BASE/yt_auto.py" login
+    "$VENV/bin/python" "$BASE/main.py" login
 elif [ "$1" == "run" ]; then
     limit=${2:-}
     if [ -z "$limit" ]; then
         echo "🚀 Menjalankan semua draft..."
-        "$VENV/bin/python" "$BASE/yt_auto.py" run
+        "$VENV/bin/python" "$BASE/main.py" run
     else
         echo "🚀 Menjalankan $limit draft..."
-        "$VENV/bin/python" "$BASE/yt_auto.py" run --limit "$limit"
+        "$VENV/bin/python" "$BASE/main.py" run --limit "$limit"
     fi
 elif [ "$1" == "test" ]; then
     echo "🧪 Test dengan 1 draft..."
-    "$VENV/bin/python" "$BASE/yt_auto.py" run --limit 1
+    "$VENV/bin/python" "$BASE/main.py" run --limit 1
 elif [ "$1" == "status" ]; then
     echo "📊 Status Setup:"
     echo ""

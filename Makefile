@@ -1,4 +1,4 @@
-.PHONY: help setup login run test status clean install-chromium
+.PHONY: help setup login run test status capture clean install-chromium
 
 VENV := .venv
 PYTHON := $(VENV)/bin/python
@@ -13,24 +13,19 @@ help:
 	@echo "Jalankan:"
 	@echo "  make login              - Login ke YouTube Studio (sekali saja)"
 	@echo "  make test               - Test dengan 1 draft"
-	@echo "  make run LIMIT=5         - Jalankan 5 draft (default: semua)"
+	@echo "  make run LIMIT=5        - Jalankan 5 draft (default: semua)"
 	@echo "  make run                - Jalankan semua draft"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  make status             - Cek status setup"
+	@echo "  make capture            - Rekam selector via Playwright codegen"
 	@echo "  make install-chromium   - Install/reinstall Chromium"
 	@echo "  make clean              - Hapus virtual environment & cache"
 	@echo "  make help               - Tampilkan bantuan ini"
 	@echo ""
 
-setup: venv install-chromium
-	@echo ""
-	@echo "✓ Setup selesai!"
-	@echo ""
-	@echo "Langkah selanjutnya:"
-	@echo "  make login              - Login ke YouTube Studio"
-	@echo "  make test               - Test dengan 1 draft"
-	@echo ""
+setup:
+	@bash setup.sh
 
 venv:
 	@if [ ! -d "$(VENV)" ]; then \
@@ -43,49 +38,35 @@ venv:
 	@$(PIP) install -q -r requirements.txt
 
 install-chromium: venv
-	@echo "Install Chromium untuk Playwright..."
-	@$(PYTHON) -m playwright install chromium
-	@echo "✓ Chromium installed"
+	@if command -v google-chrome >/dev/null 2>&1 || command -v google-chrome-stable >/dev/null 2>&1; then \
+		echo "✓ Google Chrome terdeteksi — lewati download Chromium (app memakai channel=chrome)"; \
+	else \
+		echo "Install Chromium untuk Playwright..."; \
+		$(PYTHON) -m playwright install chromium; \
+		echo "✓ Chromium installed"; \
+	fi
 
 login: venv
 	@echo "🔐 Login YouTube Studio..."
-	@$(PYTHON) yt_auto.py login
+	@$(PYTHON) main.py login
 
 test: venv
 	@echo "🧪 Test dengan 1 draft..."
-	@$(PYTHON) yt_auto.py run --limit 1
+	@$(PYTHON) main.py run --limit 1
 
 run: venv
 	@if [ -z "$(LIMIT)" ]; then \
 		echo "🚀 Menjalankan semua draft..."; \
-		$(PYTHON) yt_auto.py run; \
 	else \
 		echo "🚀 Menjalankan $(LIMIT) draft..."; \
-		$(PYTHON) yt_auto.py run --limit $(LIMIT); \
 	fi
+	@$(PYTHON) main.py run $(if $(LIMIT),--limit $(LIMIT))
 
-status: venv
-	@echo "📊 Status Setup:"
-	@echo ""
-	@if [ -d "$(VENV)" ]; then \
-		echo "✓ Virtual environment: OK"; \
-	else \
-		echo "✗ Virtual environment: NOT FOUND"; \
-	fi
-	@if [ -d "profile" ] && [ -n "$$(ls -A profile 2>/dev/null)" ]; then \
-		echo "✓ Login session: OK"; \
-	else \
-		echo "✗ Login session: BELUM ADA"; \
-	fi
-	@if [ -d "thumbnails" ] && [ -n "$$(ls -A thumbnails 2>/dev/null)" ]; then \
-		echo "✓ Thumbnail: $$(ls thumbnails | wc -l) file(s)"; \
-	else \
-		echo "⚠ Thumbnail: KOSONG"; \
-	fi
-	@if [ -f "config.json" ]; then \
-		echo "✓ Config: OK"; \
-	fi
-	@echo ""
+capture:
+	@bash capture.sh
+
+status:
+	@bash run.sh status
 
 clean:
 	@echo "🧹 Cleaning up..."

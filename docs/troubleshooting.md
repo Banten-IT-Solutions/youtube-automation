@@ -126,7 +126,7 @@ ls profile/   # Harus berisi file profile browser
 
 1. Pastikan akun punya akses ke YouTube Studio
 2. Test dengan `bash run.sh test`
-3. Cek screenshot di `logs/shots/` untuk lihat step yang gagal
+3. Cek screenshot di `logs/screenshots/` untuk lihat step yang gagal
 
 ---
 
@@ -168,7 +168,7 @@ gagal klik Detail -> selector tidak ketemu
 .venv/bin/python -m playwright codegen "https://studio.youtube.com/"
 ```
 2. Jalankan aksi manual, copy selector yang benar
-3. Update selector di `yt_auto.py`:
+3. Update selector di `core/selectors.py`:
 ```python
 SEL_EDIT_DRAFT_BTN = ["button[aria-label='Edit draf']", "selector_baru"]
 ```
@@ -180,7 +180,7 @@ SEL_EDIT_DRAFT_BTN = ["button[aria-label='Edit draf']", "selector_baru"]
 StepError: gagal klik ...
 ```
 
-1. Cek screenshot di `logs/shots/` untuk lihat step yang gagal
+1. Cek screenshot di `logs/screenshots/` untuk lihat step yang gagal
 2. Kemungkinan penyebab: selector berubah, network timeout, element tidak visible, session logout
 3. Solusi: cek selector dengan Inspector, naikkan timeout di config, re-login dan jalankan ulang
 
@@ -368,7 +368,7 @@ sudo docker-compose up
 
 ```bash
 # 1. Cek log
-cat logs/shots/FAIL.png           # Screenshot error (selalu ada saat gagal)
+cat logs/screenshots/FAIL.png           # Screenshot error (selalu ada saat gagal)
 tail -f logs/yt_auto.log          # Live log
 
 # 2. Test dengan 1 draft
@@ -378,7 +378,7 @@ bash run.sh test
 bash run.sh status
 
 # 4. Run dengan verbose
-.venv/bin/python yt_auto.py run --limit 1 --verbose
+.venv/bin/python main.py run --limit 1 --verbose
 
 # 5. Cek selector
 .venv/bin/python -m playwright codegen "https://studio.youtube.com/"
@@ -388,7 +388,7 @@ bash run.sh status
 
 ```bash
 mkdir debug_report
-cp logs/shots/* debug_report/
+cp logs/screenshots/* debug_report/
 cp config.json debug_report/
 tar -czf debug_report.tar.gz debug_report/
 ```

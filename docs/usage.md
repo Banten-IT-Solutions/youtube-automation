@@ -85,9 +85,9 @@ Output:
 | `make setup` | Setup (Makefile) |
 | `make test` | Test 1 draft (Makefile) |
 | `make run LIMIT=5` | Jalankan 5 draft (Makefile) |
-| `.venv/bin/python yt_auto.py run --limit N` | Langsung Python |
-| `python3 yt_auto.py run --verbose` | Mode debug (log detail) |
-| `python3 -c "import logger"` | Cek sistem logging |
+| `.venv/bin/python main.py run --limit N` | Langsung Python |
+| `python3 main.py run --verbose` | Mode debug (log detail) |
+| `python3 -c "import core.logger"` | Cek sistem logging |
 
 ---
 
@@ -145,7 +145,7 @@ Jika YouTube update UI dan selector berubah:
 .venv/bin/python -m playwright codegen "https://studio.youtube.com/"
 ```
 
-Jalankan aksi manual di inspector, lalu update selector di bagian atas `yt_auto.py`.
+Jalankan aksi manual di inspector, lalu update selector di bagian atas `core/selectors.py`.
 
 ### Lihat Log
 

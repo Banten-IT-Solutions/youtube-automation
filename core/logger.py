@@ -1,31 +1,31 @@
 #!/usr/bin/env python3
 
 import time
-import sys
 import os
 from datetime import datetime
 from enum import Enum
 
 
-class LogLevel(Enum):
-    DEBUG = ("🔍", "\033[36m")
-    INFO = ("ℹ️", "\033[34m")
-    SUCCESS = ("✅", "\033[32m")
-    WARNING = ("⚠️", "\033[33m")
-    ERROR = ("❌", "\033[31m")
-    STEP = ("▶️", "\033[35m")
-    PROGRESS = ("⏳", "\033[36m")
-
-
-class ColorCodes:
+class Color:
     RESET = "\033[0m"
     BOLD = "\033[1m"
     DIM = "\033[2m"
     CYAN = "\033[36m"
+    BLUE = "\033[34m"
+    MAGENTA = "\033[35m"
     GREEN = "\033[32m"
     YELLOW = "\033[33m"
     RED = "\033[31m"
-    BLUE = "\033[34m"
+
+
+class LogLevel(Enum):
+    DEBUG = ("🔍", Color.CYAN)
+    INFO = ("ℹ️", Color.BLUE)
+    SUCCESS = ("✅", Color.GREEN)
+    WARNING = ("⚠️", Color.YELLOW)
+    ERROR = ("❌", Color.RED)
+    STEP = ("▶️", Color.MAGENTA)
+    PROGRESS = ("⏳", Color.CYAN)
 
 
 class Logger:
@@ -40,9 +40,11 @@ class Logger:
         self.success_count = 0
         self.error_count = 0
         self.log_lines = []
+        self._file = None
 
         if self.log_file:
             os.makedirs(os.path.dirname(self.log_file) or ".", exist_ok=True)
+            self._file = open(self.log_file, "a", encoding="utf-8")
 
     def _get_timestamp(self):
         return datetime.now().strftime("%H:%M:%S")
@@ -57,17 +59,24 @@ class Logger:
         return formatted, color
 
     def _write(self, formatted, color=""):
-        colored = f"{color}{formatted}{ColorCodes.RESET}"
+        colored = f"{color}{formatted}{Color.RESET}"
         print(colored, flush=True)
 
-        if self.log_file:
+        if self._file:
             try:
-                with open(self.log_file, "a", encoding="utf-8") as f:
-                    f.write(formatted + "\n")
+                self._file.write(formatted + "\n")
+                self._file.flush()
             except Exception:
                 pass
 
         self.log_lines.append(formatted)
+
+    def close(self):
+        if self._file:
+            try:
+                self._file.close()
+            finally:
+                self._file = None
 
     def info(self, message):
         formatted, color = self._format_log(LogLevel.INFO, message)
@@ -101,9 +110,9 @@ class Logger:
 
     def section(self, title):
         line = "═" * 60
-        self._write(f"\n{ColorCodes.BOLD}{ColorCodes.CYAN}{line}{ColorCodes.RESET}")
-        self._write(f"{ColorCodes.BOLD}{ColorCodes.CYAN}  {title}{ColorCodes.RESET}")
-        self._write(f"{ColorCodes.BOLD}{ColorCodes.CYAN}{line}{ColorCodes.RESET}\n")
+        self._write(f"\n{Color.BOLD}{Color.CYAN}{line}{Color.RESET}")
+        self._write(f"{Color.BOLD}{Color.CYAN}  {title}{Color.RESET}")
+        self._write(f"{Color.BOLD}{Color.CYAN}{line}{Color.RESET}\n")
 
     def start_draft(self, draft_num, total=None):
         self.current_draft = draft_num
@@ -132,7 +141,7 @@ class Logger:
             self.warning(f"✗ {result_text}", )
 
     def separator(self):
-        self._write(f"{ColorCodes.DIM}{'─' * 60}{ColorCodes.RESET}")
+        self._write(f"{Color.DIM}{'─' * 60}{Color.RESET}")
 
     def get_elapsed_time(self):
         elapsed = time.time() - self.start_time
@@ -146,18 +155,18 @@ class Logger:
 
         self.section("RINGKASAN HASIL")
 
-        self._write(f"  Total Draft Yang Diproses : {ColorCodes.BOLD}{self.draft_count}{ColorCodes.RESET}")
-        self._write(f"  ✅ Berhasil : {ColorCodes.GREEN}{self.success_count}{ColorCodes.RESET}")
-        self._write(f"  ❌ Gagal : {ColorCodes.RED}{self.error_count}{ColorCodes.RESET}")
-        self._write(f"  ⏱️  Waktu total : {ColorCodes.CYAN}{elapsed}{ColorCodes.RESET}")
+        self._write(f"  Total Draft Yang Diproses : {Color.BOLD}{self.draft_count}{Color.RESET}")
+        self._write(f"  ✅ Berhasil : {Color.GREEN}{self.success_count}{Color.RESET}")
+        self._write(f"  ❌ Gagal : {Color.RED}{self.error_count}{Color.RESET}")
+        self._write(f"  ⏱️  Waktu total : {Color.CYAN}{elapsed}{Color.RESET}")
 
         if self.error_count == 0 and self.draft_count > 0:
-            self._write(f"\n  {ColorCodes.GREEN}{ColorCodes.BOLD}🎉 Semua draft berhasil diproses!{ColorCodes.RESET}")
+            self._write(f"\n  {Color.GREEN}{Color.BOLD}🎉 Semua draft berhasil diproses!{Color.RESET}")
         elif self.draft_count == 0:
-            self._write(f"\n  {ColorCodes.YELLOW}Tidak ada draft yang diproses.{ColorCodes.RESET}")
+            self._write(f"\n  {Color.YELLOW}Tidak ada draft yang diproses.{Color.RESET}")
         else:
             success_rate = (self.success_count / self.draft_count) * 100
-            self._write(f"\n  {ColorCodes.YELLOW}Tingkat sukses : {success_rate:.1f}%{ColorCodes.RESET}")
+            self._write(f"\n  {Color.YELLOW}Tingkat sukses : {success_rate:.1f}%{Color.RESET}")
 
         self._write("")
 
@@ -176,10 +185,6 @@ def get_logger():
     if _logger is None:
         _logger = Logger()
     return _logger
-
-
-def log(message):
-    get_logger().info(message)
 
 
 def LOG(*args):

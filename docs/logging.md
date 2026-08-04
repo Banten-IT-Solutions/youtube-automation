@@ -53,16 +53,16 @@ Aturan:
 
 ```bash
 # Jalankan normal
-python3 yt_auto.py run
+python3 main.py run
 
 # Mode debug (tampilkan log DEBUG)
-python3 yt_auto.py run --verbose
+python3 main.py run --verbose
 
 # Batasi jumlah draft
-python3 yt_auto.py run --limit 5
+python3 main.py run --limit 5
 
 # Test sistem logging
-python3 -c "import logger; print('ok')"
+python3 -c "import core.logger; print('ok')"
 
 # Lihat / cari / monitor log
 cat logs/yt_auto.log
@@ -75,7 +75,7 @@ tail -f logs/yt_auto.log
 
 `--verbose` menampilkan detail teknis tambahan (semua log DEBUG):
 ```bash
-python3 yt_auto.py run --verbose
+python3 main.py run --verbose
 ```
 
 ---
@@ -166,7 +166,7 @@ Semua log otomatis disimpan di `logs/yt_auto.log` (tanpa warna/ANSI codes).
 ## 6. API Logger (untuk Development)
 
 ```python
-from logger import get_logger
+from core.logger import get_logger
 
 logger = get_logger()
 
@@ -200,7 +200,7 @@ logger.summary()
 |---------|--------|
 | Emoji tidak terlihat | Terminal perlu support ANSI colors (`echo $TERM`) |
 | Warna tidak muncul | `cat logs/yt_auto.log` (versi plain text) |
-| Mau lihat debug info | `python3 yt_auto.py run --verbose` |
+| Mau lihat debug info | `python3 main.py run --verbose` |
 | Mau simpan log khusus | Sudah otomatis di `logs/yt_auto.log` |
 | Mau search di log | `grep "keyword" logs/yt_auto.log` |
 
