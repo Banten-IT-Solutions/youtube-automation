@@ -57,13 +57,13 @@ def open_cards_panel(s: Studio) -> None:
 
 
 def _card_exists(s: Studio) -> bool:
-     for indicator in ("ytcp-video-card-list-item", "ytcp-video-card"):
-         try:
-             if s.page.locator(indicator).count() > 0:
-                 return True
-         except Exception:
-             continue
-     return False
+     try:
+         cards_btn = s.page.locator("#cards-button").first
+         cards_btn.wait_for(state="visible", timeout=5000)
+         btn_text = cards_btn.inner_text().strip()
+         return btn_text.lower() == "edit"
+     except Exception:
+         return False
 
 
 def pick_playlist(s: Studio, playlist: str, cfg: dict) -> None:
@@ -141,25 +141,16 @@ def video_elements(s: Studio, playlist: str | None, cfg: dict) -> None:
      import_end_screen(s)
 
      logger.action("Kartu", f"Playlist : {playlist or '(tidak cocok)'}")
-     open_cards_panel(s)
-     s.wait(2000 / 1000.0)
-
+     
      if _card_exists(s):
-         logger.info("Kartu Sudah Ada (detected inside dialog)")
-         s.page.keyboard.press("Escape")
-         s.wait(1500 / 1000.0)
-         s.shot("06-video-elements")
-         return
-
-     add_heading = s.page.get_by_text("Tambahkan kartu", exact=False)
-     if add_heading.count() == 0:
-         logger.info("Kartu Sudah Ada (tidak ada tombol Tambahkan)")
-         s.page.keyboard.press("Escape")
-         s.wait(1500 / 1000.0)
+         logger.info("Kartu Sudah Ada")
          s.shot("06-video-elements")
          return
 
      logger.info("Belum Ada Kartu - Tambahkan Baru")
+     open_cards_panel(s)
+     s.wait(2000 / 1000.0)
+
      ok = s.page.evaluate(
          """() => { const el = document.querySelector(
          '[aria-label="Tambahkan kartu info yang ditautkan ke playlist"]');
