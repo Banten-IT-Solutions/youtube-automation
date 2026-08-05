@@ -5,14 +5,15 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import os
+import re
 import sys
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import TimeoutError as PWTimeout, sync_playwright
 
 from pathlib import Path
 
 from core.logger import get_logger, init_logger
-from core.selectors import SEL_ROW
+from core.selectors import SEL_ROW, SEL_TITLE_LINK
 
 from core.config import BASE, apply_env_overrides, load_config, validate_config
 from core.helpers import find_prev_schedule_date, read_file_info, replace_number
@@ -96,6 +97,41 @@ def cmd_thumbnail(args, cfg: dict) -> None:
          raise SystemExit(1)
 
 
+def _is_unprocessed_draft_title(title: str) -> bool:
+      return not re.match(r"^\s*\d{1,4}\b", title)
+
+
+def _draft_row(rows, no_schedule: bool):
+      if not no_schedule:
+          return rows.first
+      for i in range(rows.count()):
+          row = rows.nth(i)
+          try:
+              title = row.locator(SEL_TITLE_LINK).inner_text(timeout=2000).strip()
+          except PWTimeout:
+              continue
+          if _is_unprocessed_draft_title(title):
+              return row
+      return None
+
+
+def _accept_dialog(dialog) -> None:
+      try:
+          dialog.accept()
+      except Exception:
+          pass
+
+
+def _allow_navigation(page) -> None:
+      try:
+          page.evaluate("""() => {
+              window.onbeforeunload = null;
+              window.addEventListener('beforeunload', event => event.stopImmediatePropagation(), true);
+          }""")
+      except Exception:
+          pass
+
+
 def main() -> None:
      global _logger
      ap = build_parser()
@@ -139,6 +175,7 @@ def main() -> None:
          args=["--disable-blink-features=AutomationControlled"],
      )
      page = ctx.pages[0] if ctx.pages else ctx.new_page()
+     page.on("dialog", _accept_dialog)
 
      s = None
      try:
@@ -177,8 +214,12 @@ def main() -> None:
              if rows.count() == 0:
                  _logger.success("Semua Draft Selesai")
                  break
+             row = _draft_row(rows, args.no_schedule)
+             if row is None:
+                 _logger.success("Semua Draft Tanpa Nomor Selesai")
+                 break
 
-             open_editor(s, rows.first)
+             open_editor(s, row)
              num, fname = read_file_info(s)
              if num is None:
                  _logger.error("Nomor Tidak Terbaca Dari Nama File")
@@ -209,6 +250,13 @@ def main() -> None:
                  _logger.warning(f"Mencapai Batas Draft {args.limit}")
                  break
              page.wait_for_timeout(2000)
+             if args.no_schedule:
+                 page.close(run_before_unload=False)
+                 page = ctx.new_page()
+                 page.on("dialog", _accept_dialog)
+                 s = Studio(page, ctx, cfg)
+             else:
+                 _allow_navigation(page)
              page.goto(cfg["studio_url"])
              page.wait_for_timeout(1000)
              if cfg.get("pause_between_drafts") and sys.stdin.isatty():

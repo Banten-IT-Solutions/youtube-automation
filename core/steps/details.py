@@ -25,7 +25,7 @@ from ..studio import Studio
 
 
 def _leading_number(text: str | None) -> int | None:
-    m = re.match(r"^\s*(\d{1,4})\b", text or "")
+    m = re.search(r"\b(\d{1,4})\b", text or "")
     return int(m.group(1)) if m else None
 
 
