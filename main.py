@@ -205,6 +205,9 @@ def main() -> None:
                      known_dates[fname] = sch
                  process_draft(s, num, prev_fname, sch, cfg)
              done += 1
+             if args.limit and done >= args.limit:
+                 _logger.warning(f"Mencapai Batas Draft {args.limit}")
+                 break
              page.wait_for_timeout(2000)
              page.goto(cfg["studio_url"])
              page.wait_for_timeout(1000)
