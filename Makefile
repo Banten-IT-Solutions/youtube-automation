@@ -14,6 +14,7 @@ help:
 	@echo "  make login              - Login ke YouTube Studio (sekali saja)"
 	@echo "  make test               - Test dengan 1 draft"
 	@echo "  make run LIMIT=5        - Jalankan 5 draft (default: semua)"
+	@echo "  make run LIMIT=1 SCHEDULE=no - 1 draft, jam saja (20:00), tanpa klik Jadwalkan"
 	@echo "  make run                - Jalankan semua draft"
 	@echo ""
 	@echo "Utilities:"
@@ -64,7 +65,7 @@ run: venv
 	else \
 		echo "🚀 Menjalankan $(LIMIT) draft..."; \
 	fi
-	@$(PYTHON) main.py run $(if $(LIMIT),--limit $(LIMIT))
+	@$(PYTHON) main.py run $(if $(LIMIT),--limit $(LIMIT)) $(if $(filter no,$(SCHEDULE)),--no-schedule)
 
 capture:
 	@bash capture.sh

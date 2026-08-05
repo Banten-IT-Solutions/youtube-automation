@@ -36,16 +36,38 @@ def open_editor(s: Studio, row: Locator) -> None:
      s.shot("00-editor")
 
 
+def series_name(fname: str | None) -> str:
+     return re.sub(r"^\d+\s+", "", (fname or "").replace(".mp4", "").strip()).strip()
+
+
+def _leading_num(text: str) -> int:
+     m = re.match(r"^\s*(\d{1,4})\b", text or "")
+     return int(m.group(1)) if m else 0
+
+
+def _latest_text(texts: list[str], target_normalized: str) -> str | None:
+     best, best_num = None, -1
+     for t in texts:
+         t_normalized = re.sub(r'\s+', ' ', t.lower())
+         if target_normalized not in t_normalized:
+             continue
+         n = _leading_num(t)
+         if n > best_num:
+             best_num, best = n, t
+     return best
+
+
 def _find_card_by_text(s: Studio, cards: Locator, target_normalized: str) -> tuple[Locator | None, str | None]:
+     texts = []
      for i in range(cards.count()):
          try:
-             t = cards.nth(i).inner_text(timeout=1500).strip()
-             t_normalized = re.sub(r'\s+', ' ', t.lower())
-             if t_normalized == target_normalized or target_normalized in t_normalized:
-                 return cards.nth(i), t
+             texts.append(cards.nth(i).inner_text(timeout=1500).strip())
          except PWTimeout:
              continue
-     return None, None
+     best = _latest_text(texts, target_normalized)
+     if best is None:
+         return None, None
+     return cards.nth(texts.index(best)), best
 
 
 def _search_reuse_dialog(s: Studio, target: str) -> tuple[Locator | None, str | None]:
@@ -108,10 +130,11 @@ def _confirm_reuse(s: Studio, picked: Locator, picked_txt: str | None) -> None:
 
 def reuse_details(s: Studio, prev_fname: str) -> None:
      logger = get_logger()
-     logger.action("Gunakan Detail Video Lama", "dari Video Sebelumnya")
+     logger.action("Gunakan Detail Video Lama", "dari Video Terbaru Series")
      s.click_first(SEL_REUSE_BTN, "Salin detail video")
-     target = (prev_fname or "").replace(".mp4", "").strip()
+     target = series_name(prev_fname)
      target_normalized = re.sub(r'\s+', ' ', target.lower())
+     logger.step(f"Target series: {target}", indent=2)
 
      picked, picked_txt = _find_card_by_text(
          s, s.page.locator(SEL_REUSE_OPTION), target_normalized)
@@ -120,7 +143,7 @@ def reuse_details(s: Studio, prev_fname: str) -> None:
          picked, picked_txt = _search_reuse_dialog(s, target)
 
      if picked is None:
-         logger.error(f"Video Sebelumnya '{target}' Tidak Ditemukan di Dialog Reuse")
+         logger.error(f"Video Series '{target}' Tidak Ditemukan di Dialog Reuse")
          available = []
          for i in range(min(3, s.page.locator(SEL_REUSE_OPTION).count())):
              try:

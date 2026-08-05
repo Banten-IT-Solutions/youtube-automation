@@ -35,6 +35,8 @@ def build_parser() -> argparse.ArgumentParser:
 
      run_p = sub.add_parser("run", help="Jalankan automasi draft")
      run_p.add_argument("--limit", type=int, default=None, help="maks draft diproses")
+     run_p.add_argument("--no-schedule", action="store_true",
+                        help="Isi jam saja (tanpa tanggal, tanpa klik tombol Jadwalkan)")
      run_p.add_argument("--verbose", action="store_true", help="enable verbose logging")
 
      login_p = sub.add_parser("login", help="Login ke YouTube Studio (sekali saja)")
@@ -184,21 +186,24 @@ def main() -> None:
 
              prev_num = num - 1
              prev_fname = replace_number(fname, num, prev_num) if fname else None
-             if prev_fname in known_dates:
-                 prev_date = known_dates[prev_fname]
-                 _logger.step(f"Pakai Tanggal Sesi Draft {prev_num} : {prev_date}", indent=1)
+             if args.no_schedule:
+                 _logger.step("Mode Tanpa Jadwal: Tanggal Default, Jam Saja", indent=1)
+                 process_draft(s, num, prev_fname, None, cfg, no_schedule=True)
              else:
-                 prev_date = find_prev_schedule_date(s, prev_num, prev_fname)
-             if prev_date is None:
-                 _logger.error(f"Tanggal Video Sebelumnya {prev_num} Tidak Ditemukan")
-                 _logger.info("Jadwalkan Video Sebelumnya Dulu")
-                 break
-             sch = prev_date + dt.timedelta(days=cfg["schedule_offset_days"])
-             sch_str = sch.strftime(cfg["date_format"])
-             if fname:
-                 known_dates[fname] = sch
-
-             process_draft(s, num, prev_fname, sch, cfg)
+                 if prev_fname in known_dates:
+                     prev_date = known_dates[prev_fname]
+                     _logger.step(f"Pakai Tanggal Sesi Draft {prev_num} : {prev_date}", indent=1)
+                 else:
+                     prev_date = find_prev_schedule_date(s, prev_num, prev_fname)
+                 if prev_date is None:
+                     _logger.error(f"Tanggal Video Sebelumnya {prev_num} Tidak Ditemukan")
+                     _logger.info("Jadwalkan Video Sebelumnya Dulu")
+                     break
+                 sch = prev_date + dt.timedelta(days=cfg["schedule_offset_days"])
+                 sch_str = sch.strftime(cfg["date_format"])
+                 if fname:
+                     known_dates[fname] = sch
+                 process_draft(s, num, prev_fname, sch, cfg)
              done += 1
              page.wait_for_timeout(2000)
              page.goto(cfg["studio_url"])

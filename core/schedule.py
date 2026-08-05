@@ -16,9 +16,10 @@ MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
           "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
 
 
-def schedule(s: Studio, date_obj: dt.date, time_str: str) -> None:
+def schedule(s: Studio, date_obj: dt.date | None, time_str: str, no_schedule: bool = False) -> None:
      logger = get_logger()
-     logger.action("Tentukan Jadwal", f"{date_obj.strftime('%d/%m/%Y')} {time_str}")
+     label = "default" if (no_schedule or date_obj is None) else date_obj.strftime('%d/%m/%Y')
+     logger.action("Tentukan Jadwal", f"{label} {time_str}")
      s.role_click(SEL_NEXT)
      s.role_click(SEL_NEXT)
      sc = s.page.locator("ytcp-video-visibility-select #second-container").first
@@ -41,6 +42,13 @@ def schedule(s: Studio, date_obj: dt.date, time_str: str) -> None:
          s.wait(800 / 1000.0)
      except Exception:
          logger.warning(f"Gagal Pilih Visibilitas")
+     if no_schedule:
+         set_schedule_time(s, time_str)
+         s.shot("07-visibility")
+         logger.result("Jam Diset, Tanggal Default (Tanpa Submit)", success=True)
+         logger.step("Tunggu 10 detik auto-save...", indent=2)
+         s.wait(10.0)
+         return
      set_schedule_date(s, date_obj)
      set_schedule_time(s, time_str)
      s.shot("07-visibility")
