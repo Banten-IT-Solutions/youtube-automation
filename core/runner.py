@@ -27,7 +27,7 @@ def process_draft(s: Studio, num: int, prev_fname: str | None, sch: dt.date | No
       logger.separator()
       logger.action("Konfigurasi Draft", f"Video {prev_num}, Playlist : {playlist or '-'}")
       if no_schedule:
-          logger.step(f"Jadwal : {cfg['schedule_time']} (tanggal default, tanpa submit)", indent=2)
+          logger.step(f"Jadwal : (klik radio saja, tanpa submit)", indent=2)
       else:
           sch_str = sch.strftime(cfg["date_format"])
           logger.step(f"Jadwal : {sch_str} {cfg['schedule_time']}", indent=2)

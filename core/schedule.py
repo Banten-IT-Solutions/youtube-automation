@@ -43,11 +43,10 @@ def schedule(s: Studio, date_obj: dt.date | None, time_str: str, no_schedule: bo
      except Exception:
          logger.warning(f"Gagal Pilih Visibilitas")
      if no_schedule:
-         set_schedule_time(s, time_str)
          s.shot("07-visibility")
-         logger.result("Jam Diset, Tanggal Default (Tanpa Submit)", success=True)
-         logger.step("Tunggu 10 detik auto-save...", indent=2)
-         s.wait(10.0)
+         logger.result("Radio Jadwalkan Dipilih (Tanpa Submit)", success=True)
+         logger.step("Tunggu 5 detik auto-save...", indent=2)
+         s.wait(5.0)
          return
      set_schedule_date(s, date_obj)
      set_schedule_time(s, time_str)
