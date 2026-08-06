@@ -218,98 +218,98 @@ def main() -> None:
              if rows.count() == 0:
                  _logger.success("Semua Draft Selesai")
                  break
-              filter_unprocessed = args.no_schedule or args.schedule_yes
-              row = _draft_row(rows, filter_unprocessed)
-              if row is None:
-                  if filter_unprocessed:
-                      nxt = page.get_by_role("button", name="Buka halaman berikutnya").first
-                      try:
-                          nxt.wait_for(state="visible", timeout=3000)
-                          nxt.click()
-                          _logger.step("Halaman berikutnya...", indent=1)
-                          page.wait_for_timeout(4000)
-                          continue
-                      except PWTimeout:
-                          _logger.success("Semua Draft Tanpa Nomor Selesai")
-                          break
-                  else:
-                      _logger.success("Semua Draft Tanpa Nomor Selesai")
-                      break
+             filter_unprocessed = args.no_schedule or args.schedule_yes
+             row = _draft_row(rows, filter_unprocessed)
+             if row is None:
+                 if filter_unprocessed:
+                     nxt = page.get_by_role("button", name="Buka halaman berikutnya").first
+                     try:
+                         nxt.wait_for(state="visible", timeout=3000)
+                         nxt.click()
+                         _logger.step("Halaman berikutnya...", indent=1)
+                         page.wait_for_timeout(4000)
+                         continue
+                     except PWTimeout:
+                         _logger.success("Semua Draft Tanpa Nomor Selesai")
+                         break
+                 else:
+                     _logger.success("Semua Draft Tanpa Nomor Selesai")
+                     break
 
-              open_editor(s, row)
-              num, fname = read_file_info(s)
-              if num is None:
-                  _logger.error("Nomor Tidak Terbaca Dari Nama File")
-                  break
+             open_editor(s, row)
+             num, fname = read_file_info(s)
+             if num is None:
+                 _logger.error("Nomor Tidak Terbaca Dari Nama File")
+                 break
 
-              prev_num = num - 1
-              prev_fname = replace_number(fname, num, prev_num) if fname else None
-              if args.no_schedule:
-                  _logger.step("Mode Tanpa Jadwal: Klik Radio Jadwalkan Saja", indent=1)
-                  process_draft(s, num, prev_fname, None, cfg, no_schedule=True)
-              elif args.schedule_only:
-                  _logger.step("Mode Schedule Only: Langsung ke Visibility", indent=1)
-                  if prev_fname in known_dates:
-                      prev_date = known_dates[prev_fname]
-                      _logger.step(f"Pakai Tanggal Sesi Draft {prev_num} : {prev_date}", indent=1)
-                  else:
-                      prev_date = find_prev_schedule_date(s, prev_num, prev_fname)
-                  if prev_date is None:
-                      _logger.error(f"Tanggal Video Sebelumnya {prev_num} Tidak Ditemukan")
-                      _logger.info("Jadwalkan Video Sebelumnya Dulu")
-                      break
-                  sch = prev_date + dt.timedelta(days=cfg["schedule_offset_days"])
-                  sch_str = sch.strftime(cfg["date_format"])
-                  if fname:
-                      known_dates[fname] = sch
-                  process_draft(s, num, prev_fname, sch, cfg, schedule_only=True)
-              elif args.schedule_yes:
-                  _logger.step("Mode Schedule Yes: Full Flow + Jadwalkan", indent=1)
-                  if prev_fname in known_dates:
-                      prev_date = known_dates[prev_fname]
-                      _logger.step(f"Pakai Tanggal Sesi Draft {prev_num} : {prev_date}", indent=1)
-                  else:
-                      prev_date = find_prev_schedule_date(s, prev_num, prev_fname)
-                  if prev_date is None:
-                      _logger.error(f"Tanggal Video Sebelumnya {prev_num} Tidak Ditemukan")
-                      _logger.info("Jadwalkan Video Sebelumnya Dulu")
-                      break
-                  sch = prev_date + dt.timedelta(days=cfg["schedule_offset_days"])
-                  sch_str = sch.strftime(cfg["date_format"])
-                  if fname:
-                      known_dates[fname] = sch
-                  process_draft(s, num, prev_fname, sch, cfg)
-              else:
-                  if prev_fname in known_dates:
-                      prev_date = known_dates[prev_fname]
-                      _logger.step(f"Pakai Tanggal Sesi Draft {prev_num} : {prev_date}", indent=1)
-                  else:
-                      prev_date = find_prev_schedule_date(s, prev_num, prev_fname)
-                  if prev_date is None:
-                      _logger.error(f"Tanggal Video Sebelumnya {prev_num} Tidak Ditemukan")
-                      _logger.info("Jadwalkan Video Sebelumnya Dulu")
-                      break
-                  sch = prev_date + dt.timedelta(days=cfg["schedule_offset_days"])
-                  sch_str = sch.strftime(cfg["date_format"])
-                  if fname:
-                      known_dates[fname] = sch
-                  process_draft(s, num, prev_fname, sch, cfg)
-              done += 1
-              if args.limit and done >= args.limit:
-                  _logger.warning(f"Mencapai Batas Draft {args.limit}")
-                  break
-              page.wait_for_timeout(2000)
-              if args.no_schedule or args.schedule_yes:
-                  page.close(run_before_unload=False)
-                  page = ctx.new_page()
-                  page.on("dialog", _accept_dialog)
-                  s = Studio(page, ctx, cfg)
-              else:
-                  _allow_navigation(page)
-              page.goto(cfg["studio_url"])
-              page.wait_for_timeout(1000)
-              if cfg.get("pause_between_drafts") and sys.stdin.isatty():
-                  input("  [Tekan Enter untuk lanjut ke draft berikutnya]")
+             prev_num = num - 1
+             prev_fname = replace_number(fname, num, prev_num) if fname else None
+             if args.no_schedule:
+                 _logger.step("Mode Tanpa Jadwal: Klik Radio Jadwalkan Saja", indent=1)
+                 process_draft(s, num, prev_fname, None, cfg, no_schedule=True)
+             elif args.schedule_only:
+                 _logger.step("Mode Schedule Only: Langsung ke Visibility", indent=1)
+                 if prev_fname in known_dates:
+                     prev_date = known_dates[prev_fname]
+                     _logger.step(f"Pakai Tanggal Sesi Draft {prev_num} : {prev_date}", indent=1)
+                 else:
+                     prev_date = find_prev_schedule_date(s, prev_num, prev_fname)
+                 if prev_date is None:
+                     _logger.error(f"Tanggal Video Sebelumnya {prev_num} Tidak Ditemukan")
+                     _logger.info("Jadwalkan Video Sebelumnya Dulu")
+                     break
+                 sch = prev_date + dt.timedelta(days=cfg["schedule_offset_days"])
+                 sch_str = sch.strftime(cfg["date_format"])
+                 if fname:
+                     known_dates[fname] = sch
+                 process_draft(s, num, prev_fname, sch, cfg, schedule_only=True)
+             elif args.schedule_yes:
+                 _logger.step("Mode Schedule Yes: Full Flow + Jadwalkan", indent=1)
+                 if prev_fname in known_dates:
+                     prev_date = known_dates[prev_fname]
+                     _logger.step(f"Pakai Tanggal Sesi Draft {prev_num} : {prev_date}", indent=1)
+                 else:
+                     prev_date = find_prev_schedule_date(s, prev_num, prev_fname)
+                 if prev_date is None:
+                     _logger.error(f"Tanggal Video Sebelumnya {prev_num} Tidak Ditemukan")
+                     _logger.info("Jadwalkan Video Sebelumnya Dulu")
+                     break
+                 sch = prev_date + dt.timedelta(days=cfg["schedule_offset_days"])
+                 sch_str = sch.strftime(cfg["date_format"])
+                 if fname:
+                     known_dates[fname] = sch
+                 process_draft(s, num, prev_fname, sch, cfg)
+             else:
+                 if prev_fname in known_dates:
+                     prev_date = known_dates[prev_fname]
+                     _logger.step(f"Pakai Tanggal Sesi Draft {prev_num} : {prev_date}", indent=1)
+                 else:
+                     prev_date = find_prev_schedule_date(s, prev_num, prev_fname)
+                 if prev_date is None:
+                     _logger.error(f"Tanggal Video Sebelumnya {prev_num} Tidak Ditemukan")
+                     _logger.info("Jadwalkan Video Sebelumnya Dulu")
+                     break
+                 sch = prev_date + dt.timedelta(days=cfg["schedule_offset_days"])
+                 sch_str = sch.strftime(cfg["date_format"])
+                 if fname:
+                     known_dates[fname] = sch
+                 process_draft(s, num, prev_fname, sch, cfg)
+             done += 1
+             if args.limit and done >= args.limit:
+                 _logger.warning(f"Mencapai Batas Draft {args.limit}")
+                 break
+             page.wait_for_timeout(2000)
+             if args.no_schedule or args.schedule_yes:
+                 page.close(run_before_unload=False)
+                 page = ctx.new_page()
+                 page.on("dialog", _accept_dialog)
+                 s = Studio(page, ctx, cfg)
+             else:
+                 _allow_navigation(page)
+             page.goto(cfg["studio_url"])
+             page.wait_for_timeout(1000)
+             if cfg.get("pause_between_drafts") and sys.stdin.isatty():
+                 input("  [Tekan Enter untuk lanjut ke draft berikutnya]")
      except StepError as e:
          _logger.error(f"{e}")
          if s:
