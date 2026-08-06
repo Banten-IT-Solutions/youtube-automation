@@ -216,8 +216,20 @@ def main() -> None:
                  break
              row = _draft_row(rows, args.no_schedule)
              if row is None:
-                 _logger.success("Semua Draft Tanpa Nomor Selesai")
-                 break
+                 if args.no_schedule:
+                     nxt = page.get_by_role("button", name="Buka halaman berikutnya").first
+                     try:
+                         nxt.wait_for(state="visible", timeout=3000)
+                         nxt.click()
+                         _logger.step("Halaman berikutnya...", indent=1)
+                         page.wait_for_timeout(4000)
+                         continue
+                     except PWTimeout:
+                         _logger.success("Semua Draft Tanpa Nomor Selesai")
+                         break
+                 else:
+                     _logger.success("Semua Draft Tanpa Nomor Selesai")
+                     break
 
              open_editor(s, row)
              num, fname = read_file_info(s)
