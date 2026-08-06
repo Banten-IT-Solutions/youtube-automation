@@ -227,7 +227,9 @@ def main() -> None:
                          nxt.wait_for(state="visible", timeout=3000)
                          nxt.click()
                          _logger.step("Halaman berikutnya...", indent=1)
-                         page.wait_for_timeout(4000)
+                         page.wait_for_timeout(5000)
+                         rows = page.locator(SEL_ROW)
+                         rows.first.wait_for(state="attached", timeout=10000)
                          continue
                      except PWTimeout:
                          _logger.success("Semua Draft Tanpa Nomor Selesai")
