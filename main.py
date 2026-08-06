@@ -227,7 +227,7 @@ def main() -> None:
                          nxt.wait_for(state="visible", timeout=3000)
                          nxt.click()
                          _logger.step("Halaman berikutnya...", indent=1)
-                         page.wait_for_timeout(5000)
+                         page.wait_for_timeout(7000)
                          rows = page.locator(SEL_ROW)
                          rows.first.wait_for(state="attached", timeout=10000)
                          continue
