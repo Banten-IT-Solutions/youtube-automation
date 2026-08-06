@@ -42,6 +42,9 @@ make login          # login ke YouTube Studio (sekali saja)
 make test           # test dengan 1 draft
 make run            # jalankan semua draft
 make run LIMIT=10   # jalankan 10 draft
+make run LIMIT=1 SCHEDULE=no   # 1 draft tanpa nomor, klik radio Jadwalkan saja (tanpa isi jam/tanggal)
+make run LIMIT=2 SCHEDULE=only # 2 draft, langsung jadwalkan (skip edit konten)
+make run LIMIT=2 SCHEDULE=yes  # 2 draft tanpa nomor, full flow + jadwalkan
 make status         # cek status setup
 make help           # tampilkan semua perintah
 ```

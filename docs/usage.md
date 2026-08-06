@@ -97,6 +97,9 @@ Output:
 | `make setup` | Setup (Makefile) |
 | `make test` | Test 1 draft (Makefile) |
 | `make run LIMIT=5` | Jalankan 5 draft (Makefile) |
+| `make run LIMIT=1 SCHEDULE=no` | 1 draft tanpa nomor, klik radio Jadwalkan (tanpa isi jam/tanggal) |
+| `make run LIMIT=2 SCHEDULE=only` | 2 draft, langsung jadwalkan (skip edit konten) |
+| `make run LIMIT=2 SCHEDULE=yes` | 2 draft tanpa nomor, full flow + jadwalkan |
 | `.venv/bin/python main.py run --limit N` | Langsung Python |
 | `python3 main.py run --verbose` | Mode debug (log detail) |
 | `python3 -c "import core.logger"` | Cek sistem logging |
@@ -114,6 +117,15 @@ Untuk setiap draft, sistem otomatis melakukan:
 5. **Aktifkan monetisasi & rating**
 6. **Atur elemen video** — end screen dan kartu (diimpor dari video terbaru)
 7. **Tentukan jadwal publikasi** — tanggal = video sebelumnya + `schedule_offset_days`
+
+### Mode Eksekusi
+
+| Mode | Perintah | Alur |
+|------|----------|------|
+| **Normal** | `make run LIMIT=5` | Draft pertama → full flow (1-7) → jadwalkan |
+| **No Schedule** | `make run LIMIT=1 SCHEDULE=no` | Draft tanpa nomor → full flow (1-6) → klik radio Jadwalkan (tanpa isi jam/tanggal, tanpa submit) → tunggu 3 detik auto-save |
+| **Schedule Only** | `make run LIMIT=2 SCHEDULE=only` | Draft pertama → langsung ke step 7 (jadwalkan) → skip 1-6 |
+| **Schedule Yes** | `make run LIMIT=2 SCHEDULE=yes` | Draft tanpa nomor → full flow (1-7) → jadwalkan |
 
 ---
 

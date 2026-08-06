@@ -49,11 +49,14 @@ bash run.sh run 5       # Jalankan 5 draft
 ### Method B: Makefile — Recommended untuk Developer
 
 ```bash
-make setup          # 1. Setup
-make login          # 2. Login
-make test           # 3. Test 1 draft
-make run LIMIT=5    # 4. Jalankan 5 draft
-make run            # Jalankan semua
+make setup                      # 1. Setup
+make login                      # 2. Login
+make test                       # 3. Test 1 draft
+make run LIMIT=5                # 4. Jalankan 5 draft
+make run                        # Jalankan semua
+make run LIMIT=1 SCHEDULE=no    # Klik radio Jadwalkan saja (tanpa isi jam/tanggal)
+make run LIMIT=2 SCHEDULE=only  # Langsung jadwalkan (skip edit konten)
+make run LIMIT=2 SCHEDULE=yes   # Draft tanpa nomor, full flow + jadwalkan
 ```
 
 ### Method C: Docker — Recommended untuk Production

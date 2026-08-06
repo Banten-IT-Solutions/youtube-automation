@@ -409,3 +409,14 @@ tar -czf debug_report.tar.gz debug_report/
 | Selector error | Buka Playwright Inspector & update selector |
 | Terlalu lambat | Kurangi `wait_after_action_ms` |
 | Terlalu cepat | Naikkan `wait_after_action_ms` |
+
+---
+
+## 🎯 Mode Eksekusi
+
+| Mode | Perintah | Kegunaan |
+|------|----------|----------|
+| Normal | `make run LIMIT=5` | Proses draft pertama dengan full flow + jadwalkan |
+| No Schedule | `make run LIMIT=1 SCHEDULE=no` | Proses draft tanpa nomor, klik radio Jadwalkan saja (tanpa isi jam/tanggal, tanpa submit), tunggu 3 detik auto-save |
+| Schedule Only | `make run LIMIT=2 SCHEDULE=only` | Proses draft pertama, langsung jadwalkan (skip edit konten) |
+| Schedule Yes | `make run LIMIT=2 SCHEDULE=yes` | Proses draft tanpa nomor dengan full flow + jadwalkan |

@@ -17,7 +17,7 @@ from .studio import Studio
 
 
 def process_draft(s: Studio, num: int, prev_fname: str | None, sch: dt.date | None,
-                  cfg: dict, no_schedule: bool = False) -> None:
+                  cfg: dict, no_schedule: bool = False, schedule_only: bool = False) -> None:
       logger = get_logger()
       prev_num = num - 1
       playlist = find_playlist(cfg, prev_fname or "")
@@ -27,22 +27,33 @@ def process_draft(s: Studio, num: int, prev_fname: str | None, sch: dt.date | No
       logger.separator()
       logger.action("Konfigurasi Draft", f"Video {prev_num}, Playlist : {playlist or '-'}")
       if no_schedule:
-          logger.step(f"Jadwal : (klik radio saja, tanpa submit)", indent=2)
+          logger.step(f"Jadwal : (klik radio saja, tanpa isi jam/tanggal, tanpa submit)", indent=2)
+      elif schedule_only:
+          sch_str = sch.strftime(cfg["date_format"])
+          logger.step(f"Jadwal : {sch_str} {cfg['schedule_time']} (schedule only)", indent=2)
       else:
           sch_str = sch.strftime(cfg["date_format"])
           logger.step(f"Jadwal : {sch_str} {cfg['schedule_time']}", indent=2)
       logger.step(f"Thumbnail : {thumbnail or '(tidak ditemukan)'}", indent=2)
       logger.separator()
 
-      reuse_details(s, prev_fname)
-      edit_title_desc(s, num, prev_num)
-      upload_thumbnail(s, num, prev_fname)
-      advanced_settings(s)
-      monetization(s)
-      video_elements(s, playlist, cfg)
-      if no_schedule:
+      if schedule_only:
+          schedule(s, sch, cfg["schedule_time"])
+      elif no_schedule:
+          reuse_details(s, prev_fname)
+          edit_title_desc(s, num, prev_num)
+          upload_thumbnail(s, num, prev_fname)
+          advanced_settings(s)
+          monetization(s)
+          video_elements(s, playlist, cfg)
           schedule(s, None, cfg["schedule_time"], no_schedule=True)
       else:
+          reuse_details(s, prev_fname)
+          edit_title_desc(s, num, prev_num)
+          upload_thumbnail(s, num, prev_fname)
+          advanced_settings(s)
+          monetization(s)
+          video_elements(s, playlist, cfg)
           schedule(s, sch, cfg["schedule_time"])
 
       logger.end_draft(num, success=True)
