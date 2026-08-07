@@ -16,7 +16,13 @@ from core.logger import get_logger, init_logger
 from core.selectors import SEL_ROW, SEL_TITLE_LINK
 
 from core.config import BASE, apply_env_overrides, load_config, validate_config
-from core.helpers import find_prev_schedule_date, read_file_info, replace_number
+from core.helpers import (
+    find_prev_schedule_date,
+    read_file_info,
+    replace_number,
+    wait_network_idle,
+    wait_rows_changed,
+)
 from core.runner import process_draft
 from core.steps.reuse import open_editor
 from core.studio import StepError, Studio
@@ -192,7 +198,7 @@ def main() -> None:
 
          _logger.info("Membuka YouTube Studio...")
          page.goto(cfg["studio_url"])
-         page.wait_for_timeout(4000)
+         wait_network_idle(page)
 
          s = Studio(page, ctx, cfg)
 
@@ -225,11 +231,18 @@ def main() -> None:
                      nxt = page.get_by_role("button", name="Buka halaman berikutnya").first
                      try:
                          nxt.wait_for(state="visible", timeout=3000)
+                         rows = page.locator(SEL_ROW)
+                         try:
+                             prev_title = rows.first.locator(SEL_TITLE_LINK).inner_text(timeout=2000).strip()
+                         except PWTimeout:
+                             prev_title = None
                          nxt.click()
                          _logger.step("Halaman berikutnya...", indent=1)
-                         page.wait_for_timeout(7000)
+                         wait_network_idle(page)
                          rows = page.locator(SEL_ROW)
-                         rows.first.wait_for(state="attached", timeout=10000)
+                         if wait_rows_changed(page, prev_title):
+                             continue
+                         _logger.warning("Halaman berikutnya gagal dimuat, coba lagi", indent=1)
                          continue
                      except PWTimeout:
                          _logger.success("Semua Draft Tanpa Nomor Selesai")
@@ -300,7 +313,7 @@ def main() -> None:
              if args.limit and done >= args.limit:
                  _logger.warning(f"Mencapai Batas Draft {args.limit}")
                  break
-             page.wait_for_timeout(2000)
+             wait_network_idle(page)
              if args.no_schedule or args.schedule_yes:
                  page.close(run_before_unload=False)
                  page = ctx.new_page()
@@ -309,7 +322,7 @@ def main() -> None:
              else:
                  _allow_navigation(page)
              page.goto(cfg["studio_url"])
-             page.wait_for_timeout(1000)
+             wait_network_idle(page)
              if cfg.get("pause_between_drafts") and sys.stdin.isatty():
                  input("  [Tekan Enter untuk lanjut ke draft berikutnya]")
      except StepError as e:

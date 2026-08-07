@@ -8,6 +8,7 @@ import glob
 import json
 import os
 import re
+import time
 import urllib.parse
 
 from playwright.sync_api import TimeoutError as PWTimeout
@@ -20,6 +21,42 @@ from .studio import Studio
 
 def today_str(fmt: str = "%d/%m/%Y") -> str:
     return dt.date.today().strftime(fmt)
+
+
+def wait_network_idle(page, timeout: int = 15000) -> None:
+    """Tunggu hingga lalu lintas jaringan mereda (halaman dianggap terload).
+
+    Jaringan IDLE berarti tidak ada permintaan yang tertunda dalam 500ms,
+    indikator kuat bahwa konten halaman/daftar sudah selesai dimuat.
+    """
+    try:
+        page.wait_for_load_state("networkidle", timeout=timeout)
+    except PWTimeout:
+        pass
+
+
+def wait_rows_changed(page, prev_title: str | None, timeout: int = 20000) -> bool:
+    """Pastikan daftar baris berubah dari sebelumnya (halaman berikutnya terload).
+
+    Berguna untuk pagination SPA yang memuat konten via AJAX: daripada menunggu
+    dengan delay tetap, kita menunggu sampai judul baris pertama benar-benar
+    berganti dari konten lama — bukti bahwa data halaman baru sudah dirender.
+    """
+    rows = page.locator(SEL_ROW)
+    try:
+        rows.first.wait_for(state="attached", timeout=timeout)
+    except PWTimeout:
+        return False
+    deadline = time.monotonic() + timeout / 1000.0
+    while time.monotonic() < deadline:
+        try:
+            title = rows.first.locator(SEL_TITLE_LINK).inner_text(timeout=2000).strip()
+        except PWTimeout:
+            continue
+        if prev_title is None or (title and title != prev_title):
+            return True
+        page.wait_for_timeout(200)
+    return False
 
 
 def read_file_info(s: Studio) -> tuple[int | None, str | None]:
@@ -77,7 +114,7 @@ def find_prev_schedule_date(s: Studio, prev_num: int, prev_fname: str | None) ->
      spage = s.ctx.new_page()
      try:
          spage.goto(scheduled_url(s.cfg, series=series))
-         spage.wait_for_timeout(5000)
+         wait_network_idle(spage)
          for _ in range(10):
              rows = spage.locator(SEL_ROW)
              try:
@@ -100,8 +137,15 @@ def find_prev_schedule_date(s: Studio, prev_num: int, prev_fname: str | None) ->
              nxt = spage.get_by_role("button", name="Buka halaman berikutnya").first
              try:
                  nxt.wait_for(state="visible", timeout=3000)
+                 rows = spage.locator(SEL_ROW)
+                 try:
+                     prev_title = rows.first.locator(SEL_TITLE_LINK).inner_text(timeout=2000).strip()
+                 except PWTimeout:
+                     prev_title = None
                  nxt.click()
-                 spage.wait_for_timeout(4000)
+                 wait_network_idle(spage)
+                 if not wait_rows_changed(spage, prev_title):
+                     break
              except PWTimeout:
                  break
          logger.warning(f"Video Sebelumnya {prev_num} Tidak Ditemukan")
